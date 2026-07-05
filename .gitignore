@@ -1,0 +1,13 @@
+# Environment
+.env
+
+# Build output
+/bin
+/pdlife
+*.exe
+
+# Logs
+*.log
+
+# Frontend deps (future)
+node_modules/
