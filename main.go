@@ -1,6 +1,9 @@
 package main
 
 import (
+	"embed"
+	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +13,17 @@ import (
 
 	"github.com/atiroop/pdlife/internal/config"
 )
+
+//go:embed web/templates/*.html
+var templateFS embed.FS
+
+type templateRenderer struct {
+	templates *template.Template
+}
+
+func (r *templateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return r.templates.ExecuteTemplate(w, name, data)
+}
 
 func main() {
 	cfg := config.Load()
@@ -23,6 +37,25 @@ func main() {
 	e.HideBanner = true
 	e.Use(echomw.Logger())
 	e.Use(echomw.Recover())
+	e.Renderer = &templateRenderer{
+		templates: template.Must(template.ParseFS(templateFS, "web/templates/*.html")),
+	}
+
+	e.GET("/", func(c echo.Context) error {
+		return c.Render(http.StatusOK, "index.html", nil)
+	})
+	e.GET("/register", func(c echo.Context) error {
+		return c.Render(http.StatusOK, "placeholder.html", map[string]string{
+			"Title":   "สมัครใช้งาน",
+			"Message": "หน้าสมัครใช้งานกำลังอยู่ระหว่างพัฒนา เปิดให้ใช้เร็วๆ นี้",
+		})
+	})
+	e.GET("/login", func(c echo.Context) error {
+		return c.Render(http.StatusOK, "placeholder.html", map[string]string{
+			"Title":   "เข้าสู่ระบบ",
+			"Message": "หน้าเข้าสู่ระบบกำลังอยู่ระหว่างพัฒนา เปิดให้ใช้เร็วๆ นี้",
+		})
+	})
 
 	e.GET("/healthz", func(c echo.Context) error {
 		sqlDB, err := db.DB()

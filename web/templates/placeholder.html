@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} — pdlife.app</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F2F6F3;
+  --surface: #FFFFFF;
+  --primary: #2E6E5E;
+  --primary-deep: #23574A;
+  --accent-soft: #DCEAE2;
+  --ink: #22322C;
+  --ink-soft: #46584F;
+  --radius: 18px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 17px; }
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.65;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(34, 50, 44, 0.10);
+  padding: 2.25rem 1.75rem;
+  max-width: 26rem;
+  width: 100%;
+  text-align: center;
+}
+.brand {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--primary-deep);
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: 1.25rem;
+}
+.brand span { color: var(--primary); }
+h1 { font-weight: 800; font-size: 1.5rem; margin-bottom: 0.6rem; }
+p { color: var(--ink-soft); margin-bottom: 1.5rem; }
+.btn {
+  display: block;
+  font-weight: 600;
+  font-size: 1.05rem;
+  text-decoration: none;
+  color: var(--primary-deep);
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  padding: 0.9rem 1.5rem;
+}
+</style>
+</head>
+<body>
+  <div class="card">
+    <a class="brand" href="/">pdlife<span>.app</span></a>
+    <h1>{{.Title}}</h1>
+    <p>{{.Message}}</p>
+    <a class="btn" href="/">กลับหน้าแรก</a>
+  </div>
+</body>
+</html>
