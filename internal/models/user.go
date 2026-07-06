@@ -17,7 +17,7 @@ const (
 type User struct {
 	ID              uint64         `gorm:"column:id;primaryKey"`
 	Email           string         `gorm:"column:email;unique;not null"`
-	Password        string         `gorm:"column:password;not null"`
+	PasswordHash    string         `gorm:"column:password_hash;not null"`
 	Nickname        string         `gorm:"column:nickname;not null"`
 	Role            UserRole       `gorm:"column:role;type:enum('Admin','Member','Unverified');not null;default:Unverified"`
 	IsActive        bool           `gorm:"column:is_active;not null;default:1"`

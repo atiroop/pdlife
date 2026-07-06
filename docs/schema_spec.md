@@ -19,7 +19,7 @@ Data model หลักของระบบ ใช้เป็น source of tru
 |--------|------|----------|
 | id | BIGINT UNSIGNED PK AUTO_INCREMENT | |
 | email | VARCHAR(255) UNIQUE | |
-| password | VARCHAR(255) | bcrypt hash |
+| password_hash | VARCHAR(255) | bcrypt hash |
 | nickname | VARCHAR(100) | ชื่อเล่น (จาก register step 1) |
 | role | ENUM('Admin','Member','Unverified') DEFAULT 'Unverified' | ดู docs/auth_flow_spec.md |
 | is_active | TINYINT(1) DEFAULT 1 | |
