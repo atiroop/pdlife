@@ -22,6 +22,7 @@ type Config struct {
 	SMTPFrom     string
 
 	AppBaseURL string
+	LogoURL    string
 }
 
 func Load() *Config {
@@ -42,6 +43,7 @@ func Load() *Config {
 		SMTPFrom:     getEnv("SMTP_FROM", "pdlife.app <noreply@pdlife.app>"),
 
 		AppBaseURL: getEnv("APP_BASE_URL", "https://pdlife.app"),
+		LogoURL:    getEnv("LOGO_URL", ""),
 	}
 }
 

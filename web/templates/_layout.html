@@ -1,0 +1,62 @@
+{{define "site-header"}}
+<header>
+  <div class="wrap">
+    <a class="brand" href="/">
+      {{if logoURL}}
+      <span class="brand-logo-chip">
+        <img src="{{logoURL}}" alt="pdlife.app" class="brand-logo"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block';">
+        <span class="brand-text-fallback">pdlife.app</span>
+      </span>
+      {{else}}
+      <span class="brand-text">pdlife.app</span>
+      {{end}}
+    </a>
+    <a class="nav-login" href="/login">เข้าสู่ระบบ</a>
+  </div>
+</header>
+{{end}}
+
+{{define "site-footer"}}
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <span>© 2026 pdlife.app สงวนลิขสิทธิ์</span>
+    <nav class="footer-links">
+      <a href="/terms">เงื่อนไขการใช้งาน</a>
+      <a href="/privacy">นโยบายความเป็นส่วนตัว</a>
+      <a href="/cookie-policy">นโยบายคุกกี้</a>
+    </nav>
+  </div>
+</footer>
+{{end}}
+
+{{define "cookie-consent"}}
+<div id="cookie-consent-banner" class="cookie-banner card" style="display:none;">
+  <p class="cookie-text">เว็บไซต์นี้ใช้คุกกี้ที่จำเป็นสำหรับระบบ และคุกกี้วิเคราะห์การใช้งาน (ถ้ากด "ยอมรับทั้งหมด")</p>
+  <div class="cookie-actions">
+    <button type="button" class="btn btn-primary" onclick="pdlifeSetCookieConsent('all')">ยอมรับทั้งหมด</button>
+    <button type="button" class="btn" onclick="pdlifeSetCookieConsent('essential-only')">เฉพาะที่จำเป็น</button>
+  </div>
+  <a class="cookie-policy-link" href="/cookie-policy">อ่านนโยบายคุกกี้</a>
+</div>
+<script>
+(function () {
+  function getCookie(name) {
+    var m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  if (!getCookie('pdlife_cookie_consent')) {
+    var el = document.getElementById('cookie-consent-banner');
+    if (el) el.style.display = 'block';
+  }
+  window.pdlifeSetCookieConsent = function (choice) {
+    var consent = { essential: true, analytics: choice === 'all' };
+    var maxAge = 60 * 60 * 24 * 30 * 6; // ~6 months
+    document.cookie = 'pdlife_cookie_consent=' + encodeURIComponent(JSON.stringify(consent)) +
+      '; path=/; max-age=' + maxAge + '; SameSite=Lax';
+    var el = document.getElementById('cookie-consent-banner');
+    if (el) el.style.display = 'none';
+  };
+})();
+</script>
+{{end}}

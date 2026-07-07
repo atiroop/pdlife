@@ -33,8 +33,16 @@ body {
   color: var(--color-ink);
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 .wrap { max-width: 1040px; margin: 0 auto; padding: 0 1.25rem; }
+
+/* page-main: the flexible content area between header and footer on
+   every page. .center variant vertically centers a single card. */
+.page-main { flex: 1 0 auto; display: flex; flex-direction: column; }
+.page-main.center { align-items: center; justify-content: center; padding: 2rem 1.25rem; }
 
 h1, h2, h3, .kpi-number {
   font-family: 'Anuphan', sans-serif;
@@ -102,15 +110,31 @@ header {
   padding: 1.1rem 0;
 }
 header .wrap { display: flex; align-items: center; justify-content: space-between; }
-.brand {
+.brand { display: inline-flex; align-items: center; text-decoration: none; }
+.brand-text {
   font-family: 'Anuphan', sans-serif;
   font-weight: 800;
   font-size: 1.25rem;
   color: #fff;
-  text-decoration: none;
-  display: inline-block;
   padding-bottom: 4px;
   border-bottom: 3px solid var(--color-brand);
+}
+/* Logo art is mostly dark ink on transparent - a light plate behind it
+   keeps it visible against the dark header instead of blending in. */
+.brand-logo-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-paper);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+.brand-logo { max-height: 40px; width: auto; display: block; }
+.brand-text-fallback {
+  display: none;
+  font-family: 'Anuphan', sans-serif;
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--color-ink);
 }
 .nav-login {
   font-weight: 700;
@@ -119,6 +143,56 @@ header .wrap { display: flex; align-items: center; justify-content: space-betwee
   padding: 0.55rem 1.1rem;
   border: 2px solid #fff;
   border-radius: 999px;
+}
+
+/* ---- footer ---- */
+.site-footer {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  padding: 1.75rem 0;
+  margin-top: auto;
+}
+.footer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  align-items: center;
+  text-align: center;
+  font-size: 0.9rem;
+}
+.footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; }
+.footer-links a { color: var(--color-paper); text-decoration: none; }
+.footer-links a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--color-brand);
+  text-decoration-thickness: 2px;
+}
+@media (min-width: 600px) {
+  .footer-inner { flex-direction: row; justify-content: space-between; text-align: left; }
+}
+
+/* ---- cookie consent banner ---- */
+.cookie-banner {
+  position: fixed;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 0.9rem 1rem;
+  z-index: 1000;
+}
+.cookie-text { font-size: 0.82rem; margin-bottom: 0.7rem; line-height: 1.4; }
+.cookie-actions { display: flex; flex-direction: row; gap: 0.5rem; }
+.cookie-actions .btn { flex: 1; padding: 0.5rem 0.6rem; font-size: 0.85rem; box-shadow: 3px 3px 0 var(--color-ink); }
+.cookie-actions .btn:active { box-shadow: 1px 1px 0 var(--color-ink); }
+.cookie-policy-link {
+  display: inline-block;
+  margin-top: 0.6rem;
+  font-size: 0.76rem;
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-brand);
 }
 
 /* ---- reduced motion ---- */

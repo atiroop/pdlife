@@ -124,12 +124,6 @@ section { padding: 2.75rem 0; }
 .bottom-cta { text-align: center; }
 .bottom-cta .btn { display: inline-block; min-width: 16rem; }
 
-footer {
-  padding: 2rem 0 2.5rem;
-  text-align: center;
-  font-size: 0.92rem;
-}
-
 /* ---- desktop ---- */
 @media (min-width: 760px) {
   .hero { padding: 3.5rem 0 4.5rem; }
@@ -143,14 +137,9 @@ footer {
 </head>
 <body>
 
-<header>
-  <div class="wrap">
-    <a class="brand" href="/">pdlife.app</a>
-    <a class="nav-login" href="/login">เข้าสู่ระบบ</a>
-  </div>
-</header>
+{{template "site-header" .}}
 
-<main>
+<main class="page-main">
   <div class="hero">
     <div class="wrap hero-inner">
       <div class="hero-copy reveal">
@@ -243,11 +232,8 @@ footer {
   </section>
 </main>
 
-<footer>
-  <div class="wrap">
-    pdlife.app — แพลตฟอร์มสำหรับผู้ป่วยล้างไต CAPD / APD / HD
-  </div>
-</footer>
+{{template "site-footer" .}}
+{{template "cookie-consent" .}}
 
 </body>
 </html>

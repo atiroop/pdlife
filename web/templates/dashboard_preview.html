@@ -44,14 +44,9 @@
 </head>
 <body>
 
-<header>
-  <div class="wrap">
-    <a class="brand" href="/">pdlife.app</a>
-    <a class="nav-login" href="/login">เข้าสู่ระบบ</a>
-  </div>
-</header>
+{{template "site-header" .}}
 
-<main class="wrap">
+<main class="page-main wrap">
   <div class="page-head">
     <h1>ตัวอย่างหน้า Dashboard</h1>
     <div class="notice card">
@@ -74,6 +69,9 @@
     {{end}}
   </div>
 </main>
+
+{{template "site-footer" .}}
+{{template "cookie-consent" .}}
 
 </body>
 </html>

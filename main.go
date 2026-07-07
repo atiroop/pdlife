@@ -49,8 +49,11 @@ func main() {
 	e.HideBanner = true
 	e.Use(echomw.Logger())
 	e.Use(echomw.Recover())
+	funcs := template.FuncMap{
+		"logoURL": func() string { return cfg.LogoURL },
+	}
 	e.Renderer = &templateRenderer{
-		templates: template.Must(template.ParseFS(templateFS, "web/templates/*.html")),
+		templates: template.Must(template.New("").Funcs(funcs).ParseFS(templateFS, "web/templates/*.html")),
 	}
 
 	e.GET("/", func(c echo.Context) error {
@@ -58,6 +61,24 @@ func main() {
 	})
 	e.GET("/dashboard-preview", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "dashboard_preview.html", mockDashboardData())
+	})
+	e.GET("/terms", func(c echo.Context) error {
+		return c.Render(http.StatusOK, "legal_page.html", map[string]string{
+			"Title":       "เงื่อนไขการใช้งาน",
+			"Placeholder": "เนื้อหาเงื่อนไขการใช้งานฉบับเต็มอยู่ระหว่างจัดทำ จะเผยแพร่ที่นี่เมื่อพร้อม",
+		})
+	})
+	e.GET("/privacy", func(c echo.Context) error {
+		return c.Render(http.StatusOK, "legal_page.html", map[string]string{
+			"Title":       "นโยบายความเป็นส่วนตัว",
+			"Placeholder": "เนื้อหานโยบายความเป็นส่วนตัวฉบับเต็มอยู่ระหว่างจัดทำ จะเผยแพร่ที่นี่เมื่อพร้อม",
+		})
+	})
+	e.GET("/cookie-policy", func(c echo.Context) error {
+		return c.Render(http.StatusOK, "legal_page.html", map[string]string{
+			"Title":       "นโยบายคุกกี้",
+			"Placeholder": "เนื้อหานโยบายคุกกี้ฉบับเต็มอยู่ระหว่างจัดทำ จะเผยแพร่ที่นี่เมื่อพร้อม",
+		})
 	})
 
 	registerLimiter := echomw.RateLimiterWithConfig(echomw.RateLimiterConfig{

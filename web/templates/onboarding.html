@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
 {{template "theme-css" .}}
 <style>
-body { padding: 2rem 1.25rem 3rem; }
+.onboarding-main { padding: 2rem 1.25rem 3rem; }
 .wrap-narrow { max-width: 30rem; margin: 0 auto; }
 .form-head { margin-bottom: 1.5rem; }
 .form-head h1 { font-size: 1.6rem; }
@@ -42,12 +42,9 @@ select, input[type="text"] {
 </style>
 </head>
 <body>
-<header>
-  <div class="wrap">
-    <a class="brand" href="/">pdlife.app</a>
-  </div>
-</header>
+{{template "site-header" .}}
 
+<main class="page-main onboarding-main">
 <div class="wrap-narrow">
   <div class="form-head">
     <h1>ตั้งค่าข้อมูลผู้ป่วย</h1>
@@ -95,5 +92,9 @@ select, input[type="text"] {
     </div>
   </form>
 </div>
+</main>
+
+{{template "site-footer" .}}
+{{template "cookie-consent" .}}
 </body>
 </html>

@@ -10,11 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
 {{template "theme-css" .}}
 <style>
-body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem 1.25rem; }
 .form-card { padding: 2rem 1.75rem; max-width: 26rem; width: 100%; }
-.brand { display: block; text-align: center; font-family: 'Anuphan', sans-serif; font-weight: 800; font-size: 1.15rem;
-  color: var(--color-ink); text-decoration: none; padding-bottom: 3px; border-bottom: 3px solid var(--color-brand);
-  display: inline-block; margin: 0 auto 1.5rem; }
 .form-head { text-align: center; margin-bottom: 1.5rem; }
 label { display: block; font-weight: 700; margin-bottom: 0.4rem; }
 input[type="email"], input[type="password"] {
@@ -33,9 +29,10 @@ input[type="email"], input[type="password"] {
 </style>
 </head>
 <body>
+{{template "site-header" .}}
+<main class="page-main center">
   <div class="card form-card">
     <div class="form-head">
-      <a class="brand" href="/">pdlife.app</a>
       <h1>เข้าสู่ระบบ</h1>
     </div>
 
@@ -55,5 +52,8 @@ input[type="email"], input[type="password"] {
 
     <div class="footer-link">ยังไม่มีบัญชี? <a href="/register">สมัครใช้งานฟรี</a></div>
   </div>
+</main>
+{{template "site-footer" .}}
+{{template "cookie-consent" .}}
 </body>
 </html>
