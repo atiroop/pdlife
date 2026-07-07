@@ -1,0 +1,135 @@
+{{define "theme-css"}}
+<style>
+/* pdlife.app — neo-brutalist status-driven theme
+   Inlined (not served as a static .css URL) because nginx on this VPS
+   intercepts any request ending in a static extension like .css and
+   serves it straight from public_html, bypassing this Go app entirely -
+   see deploy.sh / CLAUDE.md. Keeping it as a shared template partial
+   avoids that trap while still being defined in one place. */
+
+:root {
+  --color-ink: #151516;
+  --color-paper: #F6F3FF;
+  --color-surface: #FFFFFF;
+  --color-brand: #FF3D6E;
+
+  --color-good: #2ECC71;
+  --color-good-tint: #E4F9EC;
+  --color-watch: #FFB020;
+  --color-watch-tint: #FFF3DE;
+  --color-alert: #E63946;
+  --color-alert-tint: #FDE8E9;
+
+  --radius: 10px;
+  --border: 3px solid var(--color-ink);
+  --shadow: 4px 4px 0 var(--color-ink);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 17px; }
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 1.25rem; }
+
+h1, h2, h3, .kpi-number {
+  font-family: 'Anuphan', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+.mono-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* ---- neo-brutalist primitives ---- */
+.card {
+  background: var(--color-surface);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.btn {
+  display: block;
+  text-align: center;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1.08rem;
+  text-decoration: none;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.9rem 1.5rem;
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
+}
+.btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--color-ink);
+}
+.btn-primary { background: var(--color-brand); color: #fff; }
+
+.pill {
+  display: inline-block;
+  font-family: 'Sarabun', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.75rem;
+  border: 2px solid var(--color-ink);
+  border-radius: 999px;
+  background: var(--color-surface);
+}
+.pill-good  { background: var(--color-good-tint); }
+.pill-watch { background: var(--color-watch-tint); }
+.pill-alert { background: var(--color-alert-tint); }
+
+.kpi-card.status-good  { background: var(--color-good-tint); }
+.kpi-card.status-watch { background: var(--color-watch-tint); }
+.kpi-card.status-alert { background: var(--color-alert-tint); }
+
+/* ---- header ---- */
+header {
+  background: var(--color-ink);
+  padding: 1.1rem 0;
+}
+header .wrap { display: flex; align-items: center; justify-content: space-between; }
+.brand {
+  font-family: 'Anuphan', sans-serif;
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: #fff;
+  text-decoration: none;
+  display: inline-block;
+  padding-bottom: 4px;
+  border-bottom: 3px solid var(--color-brand);
+}
+.nav-login {
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  padding: 0.55rem 1.1rem;
+  border: 2px solid #fff;
+  border-radius: 999px;
+}
+
+/* ---- reduced motion ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    animation: rise 0.6s ease-out forwards;
+  }
+  .reveal.reveal-delay { animation-delay: 0.15s; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+}
+</style>
+{{end}}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -12,6 +13,7 @@ import (
 	echomw "github.com/labstack/echo/v4/middleware"
 
 	"github.com/atiroop/pdlife/internal/config"
+	"github.com/atiroop/pdlife/internal/kpi"
 )
 
 //go:embed web/templates/*.html
@@ -56,6 +58,9 @@ func main() {
 			"Message": "หน้าเข้าสู่ระบบกำลังอยู่ระหว่างพัฒนา เปิดให้ใช้เร็วๆ นี้",
 		})
 	})
+	e.GET("/dashboard-preview", func(c echo.Context) error {
+		return c.Render(http.StatusOK, "dashboard_preview.html", mockDashboardData())
+	})
 
 	e.GET("/healthz", func(c echo.Context) error {
 		sqlDB, err := db.DB()
@@ -80,4 +85,51 @@ func main() {
 		addr = "127.0.0.1:8085"
 	}
 	e.Logger.Fatal(e.Start(addr))
+}
+
+type dashboardCard struct {
+	Title       string
+	Value       string
+	Unit        string
+	Meta        string
+	Status      kpi.Status
+	StatusLabel string
+}
+
+// mockDashboardData produces example KPI cards to demo the neo-brutalist
+// status-driven dashboard layout ahead of real Log Book data. Values are
+// fixed examples chosen to show all three status colors.
+func mockDashboardData() map[string]interface{} {
+	ufML := 1450.0
+	weightDeltaKg := 1.4
+	systolic, diastolic := 142, 88
+
+	cards := []dashboardCard{
+		{
+			Title:       "Total UF วันนี้",
+			Value:       fmt.Sprintf("%.0f", ufML),
+			Unit:        "ml",
+			Meta:        "ค่าปกติ 800–2000 ml/วัน",
+			Status:      kpi.TotalUF(ufML),
+			StatusLabel: kpi.TotalUF(ufML).Label(),
+		},
+		{
+			Title:       "น้ำหนักตัว",
+			Value:       fmt.Sprintf("+%.1f", weightDeltaKg),
+			Unit:        "กก. จากค่าเฉลี่ย 7 วัน",
+			Meta:        "เปลี่ยน >1 กก./วัน = เฝ้าระวัง, >2 กก. = ผิดปกติ",
+			Status:      kpi.WeightChange(weightDeltaKg),
+			StatusLabel: kpi.WeightChange(weightDeltaKg).Label(),
+		},
+		{
+			Title:       "ความดันโลหิต",
+			Value:       fmt.Sprintf("%d/%d", systolic, diastolic),
+			Unit:        "mmHg",
+			Meta:        "ค่าปกติ <130/80 mmHg",
+			Status:      kpi.BloodPressure(systolic, diastolic),
+			StatusLabel: kpi.BloodPressure(systolic, diastolic).Label(),
+		},
+	}
+
+	return map[string]interface{}{"Cards": cards}
 }

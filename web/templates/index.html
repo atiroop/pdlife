@@ -5,78 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>pdlife.app — บันทึกการล้างไต ให้เป็นเรื่องง่ายทุกวัน</title>
 <meta name="description" content="แพลตฟอร์มสำหรับผู้ป่วยล้างไต CAPD / APD / HD ช่วยบันทึกการรักษารายวัน และตรวจสอบข้อมูลโภชนาการอาหาร ใช้ง่ายบนมือถือ">
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
 <style>
-:root {
-  --bg: #F2F6F3;
-  --surface: #FFFFFF;
-  --primary: #2E6E5E;
-  --primary-deep: #23574A;
-  --accent-soft: #DCEAE2;
-  --ink: #22322C;
-  --ink-soft: #46584F;
-  --radius: 18px;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { font-size: 17px; }
-body {
-  font-family: 'Sarabun', sans-serif;
-  background: var(--bg);
-  color: var(--ink);
-  line-height: 1.65;
-  -webkit-font-smoothing: antialiased;
-}
-.wrap { max-width: 1040px; margin: 0 auto; padding: 0 1.25rem; }
-
-/* ---- header ---- */
-header {
-  padding: 1.1rem 0;
-}
-header .wrap { display: flex; align-items: center; justify-content: space-between; }
-.brand {
-  font-weight: 800;
-  font-size: 1.25rem;
-  color: var(--primary-deep);
-  text-decoration: none;
-  letter-spacing: -0.01em;
-}
-.brand span { color: var(--primary); }
-.nav-login {
-  font-weight: 600;
-  color: var(--primary-deep);
-  text-decoration: none;
-  padding: 0.55rem 1.1rem;
-  border: 2px solid var(--primary);
-  border-radius: 999px;
-}
-
 /* ---- hero ---- */
 .hero { padding: 2.25rem 0 3rem; }
 .hero-inner { display: flex; flex-direction: column; gap: 2.25rem; }
 .eyebrow {
   display: inline-block;
-  background: var(--accent-soft);
-  color: var(--primary-deep);
-  font-weight: 600;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-weight: 700;
   font-size: 0.92rem;
   padding: 0.35rem 0.95rem;
+  border: 2px solid var(--color-ink);
   border-radius: 999px;
   margin-bottom: 1rem;
 }
 h1 {
-  font-weight: 800;
   font-size: clamp(1.9rem, 6vw, 2.9rem);
   line-height: 1.3;
-  letter-spacing: -0.015em;
-  color: var(--ink);
 }
-h1 em { font-style: normal; color: var(--primary); }
+h1 em { font-style: normal; color: var(--color-brand); }
 .hero p.lead {
   margin-top: 1rem;
   font-size: 1.1rem;
-  color: var(--ink-soft);
+  color: var(--color-ink);
   max-width: 34rem;
 }
 .cta-row {
@@ -85,62 +42,56 @@ h1 em { font-style: normal; color: var(--primary); }
   flex-direction: column;
   gap: 0.8rem;
 }
-.btn {
-  display: block;
-  text-align: center;
-  font-family: inherit;
-  font-weight: 600;
-  font-size: 1.08rem;
-  text-decoration: none;
-  padding: 0.95rem 1.5rem;   /* ≥52px tap target */
-  border-radius: 999px;
-}
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-primary:active { background: var(--primary-deep); }
-.btn-ghost { color: var(--primary-deep); border: 2px solid var(--primary); }
+.btn { min-width: 0; }
 
 /* ---- signature: mock daily log card ---- */
 .logcard {
-  background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: 0 10px 30px rgba(34, 50, 44, 0.10);
   padding: 1.4rem 1.4rem 1.1rem;
   max-width: 24rem;
 }
 .logcard .lc-head {
   display: flex; justify-content: space-between; align-items: baseline;
-  border-bottom: 2px dashed var(--accent-soft);
+  border-bottom: 3px dashed var(--color-ink);
   padding-bottom: 0.7rem; margin-bottom: 0.9rem;
 }
-.logcard .lc-title { font-weight: 800; color: var(--primary-deep); }
-.logcard .lc-date { font-size: 0.9rem; color: var(--ink-soft); }
+.logcard .lc-title { font-weight: 800; }
+.logcard .lc-date { font-size: 0.9rem; font-family: 'JetBrains Mono', monospace; }
 .lc-row {
   display: flex; justify-content: space-between; align-items: center;
   padding: 0.5rem 0;
 }
-.lc-row + .lc-row { border-top: 1px solid #EDF3EF; }
-.lc-label { color: var(--ink-soft); font-size: 0.98rem; }
-.lc-value { font-weight: 600; }
+.lc-row + .lc-row { border-top: 1px solid #E5E1F0; }
+.lc-label { font-size: 0.98rem; }
+.lc-value { font-size: 1.05rem; }
 .lc-check {
   display: inline-block; width: 1.35rem; height: 1.35rem;
-  background: var(--accent-soft); color: var(--primary-deep);
-  border-radius: 50%; text-align: center; line-height: 1.35rem;
+  background: var(--color-good);
+  color: #fff;
+  border: 2px solid var(--color-ink);
+  border-radius: 50%; text-align: center; line-height: 1.25rem;
   font-size: 0.85rem; font-weight: 800; margin-right: 0.5rem;
 }
 .lc-foot {
-  margin-top: 0.9rem; font-size: 0.88rem; color: var(--ink-soft); text-align: center;
+  margin-top: 0.9rem; font-size: 0.88rem; text-align: center;
 }
 
 /* ---- sections ---- */
 section { padding: 2.75rem 0; }
 .section-title {
-  font-weight: 800;
   font-size: clamp(1.4rem, 4.5vw, 1.9rem);
   margin-bottom: 0.5rem;
 }
-.section-sub { color: var(--ink-soft); max-width: 36rem; }
+.section-sub { color: var(--color-ink); max-width: 36rem; }
+.demo-link {
+  margin-top: 0.75rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  border-bottom: 3px solid var(--color-brand);
+  text-decoration: none;
+  display: inline-block;
+}
 
-.tools { background: var(--surface); }
+.tools { background: var(--color-surface); }
 .tool-grid {
   margin-top: 1.75rem;
   display: grid;
@@ -148,31 +99,27 @@ section { padding: 2.75rem 0; }
   gap: 1.25rem;
 }
 .tool {
-  background: var(--bg);
-  border-radius: var(--radius);
+  background: var(--color-paper);
   padding: 1.6rem 1.5rem;
 }
 .tool .t-icon {
   width: 3rem; height: 3rem;
-  background: var(--accent-soft);
-  border-radius: 14px;
+  background: var(--color-surface);
+  border: var(--border);
+  border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 1rem;
 }
-.tool .t-icon svg { width: 1.6rem; height: 1.6rem; stroke: var(--primary-deep); }
-.tool h3 { font-weight: 800; font-size: 1.2rem; margin-bottom: 0.4rem; }
-.tool p { color: var(--ink-soft); }
+.tool .t-icon svg { width: 1.6rem; height: 1.6rem; stroke: var(--color-ink); }
+.tool h3 { font-size: 1.2rem; margin-bottom: 0.4rem; }
+.tool p { color: var(--color-ink); }
 
 .caretaker .care-card {
   margin-top: 1.5rem;
-  background: var(--surface);
-  border-left: 6px solid var(--primary);
-  border-radius: var(--radius);
   padding: 1.5rem;
-  box-shadow: 0 6px 20px rgba(34, 50, 44, 0.07);
+  border-left: 6px solid var(--color-brand);
 }
-.caretaker .care-card p { color: var(--ink-soft); }
-.caretaker .care-name { font-weight: 800; color: var(--primary-deep); margin-bottom: 0.35rem; }
+.caretaker .care-name { font-weight: 800; margin-bottom: 0.35rem; }
 
 .bottom-cta { text-align: center; }
 .bottom-cta .btn { display: inline-block; min-width: 16rem; }
@@ -180,19 +127,7 @@ section { padding: 2.75rem 0; }
 footer {
   padding: 2rem 0 2.5rem;
   text-align: center;
-  color: var(--ink-soft);
   font-size: 0.92rem;
-}
-
-/* ---- single meaningful animation: hero reveal ---- */
-@media (prefers-reduced-motion: no-preference) {
-  .hero-inner > * {
-    opacity: 0;
-    transform: translateY(14px);
-    animation: rise 0.6s ease-out forwards;
-  }
-  .hero-inner > *:nth-child(2) { animation-delay: 0.15s; }
-  @keyframes rise { to { opacity: 1; transform: none; } }
 }
 
 /* ---- desktop ---- */
@@ -201,7 +136,7 @@ footer {
   .hero-inner { flex-direction: row; align-items: center; justify-content: space-between; }
   .hero-copy { max-width: 33rem; }
   .cta-row { flex-direction: row; }
-  .btn { min-width: 12rem; }
+  .cta-row .btn { min-width: 12rem; }
   .tool-grid { grid-template-columns: 1fr 1fr; }
 }
 </style>
@@ -210,7 +145,7 @@ footer {
 
 <header>
   <div class="wrap">
-    <a class="brand" href="/">pdlife<span>.app</span></a>
+    <a class="brand" href="/">pdlife.app</a>
     <a class="nav-login" href="/login">เข้าสู่ระบบ</a>
   </div>
 </header>
@@ -218,7 +153,7 @@ footer {
 <main>
   <div class="hero">
     <div class="wrap hero-inner">
-      <div class="hero-copy">
+      <div class="hero-copy reveal">
         <span class="eyebrow">สำหรับผู้ป่วยล้างไต CAPD · APD · HD</span>
         <h1>บันทึกการล้างไตของคุณ <em>ให้เป็นเรื่องง่าย</em>ทุกวัน</h1>
         <p class="lead">
@@ -227,26 +162,26 @@ footer {
         </p>
         <div class="cta-row">
           <a class="btn btn-primary" href="/register">สมัครใช้งานฟรี</a>
-          <a class="btn btn-ghost" href="/login">เข้าสู่ระบบ</a>
+          <a class="btn" href="/login">เข้าสู่ระบบ</a>
         </div>
       </div>
 
-      <div class="logcard" aria-hidden="true">
+      <div class="logcard card reveal reveal-delay" aria-hidden="true">
         <div class="lc-head">
           <span class="lc-title">บันทึกวันนี้</span>
           <span class="lc-date">จ. 6 ก.ค.</span>
         </div>
         <div class="lc-row">
           <span class="lc-label"><span class="lc-check">✓</span>น้ำหนักตัว</span>
-          <span class="lc-value">58.2 กก.</span>
+          <span class="lc-value mono-value">58.2 กก.</span>
         </div>
         <div class="lc-row">
           <span class="lc-label"><span class="lc-check">✓</span>ความดันโลหิต</span>
-          <span class="lc-value">128/76</span>
+          <span class="lc-value mono-value">128/76</span>
         </div>
         <div class="lc-row">
           <span class="lc-label"><span class="lc-check">✓</span>รอบน้ำยา CAPD</span>
-          <span class="lc-value">4 รอบ</span>
+          <span class="lc-value mono-value">4 รอบ</span>
         </div>
         <div class="lc-foot">ครบทุกรายการแล้ว เก่งมาก 🌱</div>
       </div>
@@ -257,8 +192,9 @@ footer {
     <div class="wrap">
       <h2 class="section-title">เครื่องมือที่ออกแบบมาเพื่อคุณ</h2>
       <p class="section-sub">ทุกอย่างที่ต้องใช้ในการดูแลตัวเองแต่ละวัน รวมอยู่ในที่เดียว</p>
+      <a class="demo-link" href="/dashboard-preview">ดูตัวอย่างหน้า Dashboard →</a>
       <div class="tool-grid">
-        <div class="tool">
+        <div class="tool card">
           <div class="t-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
@@ -270,7 +206,7 @@ footer {
           <p>จดบันทึกการล้างไตรายวัน น้ำหนัก ความดัน และอาการต่างๆ
              ดูย้อนหลังได้ทุกเมื่อ พกไปให้หมอดูได้ง่ายกว่าสมุดกระดาษ</p>
         </div>
-        <div class="tool">
+        <div class="tool card">
           <div class="t-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 8a6 6 0 0 1-12 0c0-3.5 2.5-6 6-6s6 2.5 6 6z" transform="translate(0 3)"/>
@@ -288,7 +224,7 @@ footer {
   <section class="caretaker">
     <div class="wrap">
       <h2 class="section-title">ดูแลโดยคนที่เข้าใจผู้ป่วยไตจริงๆ</h2>
-      <div class="care-card">
+      <div class="care-card card">
         <p class="care-name">พี่ต๊าว</p>
         <p>
           [placeholder — ข้อความแนะนำพี่ต๊าว ผู้ดูแลกลุ่มผู้ป่วยไตในไทย
