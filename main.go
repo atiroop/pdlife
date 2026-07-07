@@ -50,7 +50,8 @@ func main() {
 	e.Use(echomw.Logger())
 	e.Use(echomw.Recover())
 	funcs := template.FuncMap{
-		"logoURL": func() string { return cfg.LogoURL },
+		"logoURL":     func() string { return cfg.LogoURL },
+		"logoURLDark": func() string { return cfg.LogoURLDark },
 	}
 	e.Renderer = &templateRenderer{
 		templates: template.Must(template.New("").Funcs(funcs).ParseFS(templateFS, "web/templates/*.html")),

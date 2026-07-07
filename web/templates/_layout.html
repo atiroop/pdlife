@@ -2,12 +2,10 @@
 <header>
   <div class="wrap">
     <a class="brand" href="/">
-      {{if logoURL}}
-      <span class="brand-logo-chip">
-        <img src="{{logoURL}}" alt="pdlife.app" class="brand-logo"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block';">
-        <span class="brand-text-fallback">pdlife.app</span>
-      </span>
+      {{if logoURLDark}}
+      <img src="{{logoURLDark}}" alt="pdlife.app" class="brand-logo"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block';">
+      <span class="brand-text-fallback">pdlife.app</span>
       {{else}}
       <span class="brand-text">pdlife.app</span>
       {{end}}

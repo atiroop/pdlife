@@ -21,8 +21,9 @@ type Config struct {
 	SMTPPassword string
 	SMTPFrom     string
 
-	AppBaseURL string
-	LogoURL    string
+	AppBaseURL  string
+	LogoURL     string
+	LogoURLDark string
 }
 
 func Load() *Config {
@@ -42,8 +43,9 @@ func Load() *Config {
 		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
 		SMTPFrom:     getEnv("SMTP_FROM", "pdlife.app <noreply@pdlife.app>"),
 
-		AppBaseURL: getEnv("APP_BASE_URL", "https://pdlife.app"),
-		LogoURL:    getEnv("LOGO_URL", ""),
+		AppBaseURL:  getEnv("APP_BASE_URL", "https://pdlife.app"),
+		LogoURL:     getEnv("LOGO_URL", ""),
+		LogoURLDark: getEnv("LOGO_URL_DARK", ""),
 	}
 }
 
