@@ -10,7 +10,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 
-	"github.com/atiroop/pdlife/internal/auth"
 	"github.com/atiroop/pdlife/internal/models"
 )
 
@@ -27,29 +26,20 @@ var validCoverageTypes = map[string]models.CoverageType{
 	string(models.CoverageOther):        models.CoverageOther,
 }
 
-// currentSession reads and verifies the pdlife_session cookie set right
-// after email verification. There's no full login/refresh flow yet (a
-// separate follow-up task), so this cookie is the only way in.
-func (h *AuthHandler) currentSession(c echo.Context) (*auth.SessionClaims, error) {
-	cookie, err := c.Cookie(auth.SessionCookieName)
-	if err != nil {
-		return nil, err
-	}
-	return auth.ParseSessionToken(h.Cfg.JWTSecret, cookie.Value)
+func sessionExpiredPage(c echo.Context) error {
+	return c.Render(http.StatusUnauthorized, "placeholder.html", map[string]string{
+		"Title":   "เซสชันหมดอายุ",
+		"Message": "กรุณาเข้าสู่ระบบอีกครั้งเพื่อทำ onboarding ต่อ",
+	})
 }
 
 func (h *AuthHandler) OnboardingForm(c echo.Context) error {
-	claims, err := h.currentSession(c)
+	user, err := h.currentSession(c)
 	if err != nil {
-		return c.Render(http.StatusUnauthorized, "placeholder.html", map[string]string{
-			"Title":   "เซสชันหมดอายุ",
-			"Message": "กรุณายืนยันอีเมลอีกครั้งเพื่อเริ่ม onboarding",
-		})
+		return sessionExpiredPage(c)
 	}
 
-	var profile models.PatientProfile
-	err = h.DB.Where("user_id = ?", claims.UserID).First(&profile).Error
-	if err == nil && profile.ProfileCompletedAt != nil {
+	if h.hasCompletedOnboarding(user.ID) {
 		return c.Render(http.StatusOK, "placeholder.html", map[string]string{
 			"Title":   "ทำ onboarding ครบแล้ว",
 			"Message": "คุณกรอกข้อมูลผู้ป่วยครบถ้วนแล้ว",
@@ -60,12 +50,9 @@ func (h *AuthHandler) OnboardingForm(c echo.Context) error {
 }
 
 func (h *AuthHandler) OnboardingSubmit(c echo.Context) error {
-	claims, err := h.currentSession(c)
+	user, err := h.currentSession(c)
 	if err != nil {
-		return c.Render(http.StatusUnauthorized, "placeholder.html", map[string]string{
-			"Title":   "เซสชันหมดอายุ",
-			"Message": "กรุณายืนยันอีเมลอีกครั้งเพื่อเริ่ม onboarding",
-		})
+		return sessionExpiredPage(c)
 	}
 
 	treatmentInput := c.FormValue("treatment_type")
@@ -92,7 +79,7 @@ func (h *AuthHandler) OnboardingSubmit(c echo.Context) error {
 
 	now := time.Now()
 	var profile models.PatientProfile
-	err = h.DB.Where("user_id = ?", claims.UserID).First(&profile).Error
+	err = h.DB.Where("user_id = ?", user.ID).First(&profile).Error
 	switch {
 	case err == nil:
 		err = h.DB.Model(&profile).Updates(map[string]interface{}{
@@ -103,7 +90,7 @@ func (h *AuthHandler) OnboardingSubmit(c echo.Context) error {
 		}).Error
 	case errors.Is(err, gorm.ErrRecordNotFound):
 		profile = models.PatientProfile{
-			UserID:             claims.UserID,
+			UserID:             user.ID,
 			TreatmentType:      &treatment,
 			HospitalName:       &hospitalName,
 			CoverageType:       &coverage,

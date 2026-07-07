@@ -59,6 +59,22 @@ func (m *Mailer) SendVerificationEmail(to string, data VerifyEmailData) error {
 	return m.send(to, "ยืนยันอีเมลของคุณ - pdlife.app", htmlBuf.String(), textBuf.String())
 }
 
+type ResetPasswordData struct {
+	Nickname string
+	ResetURL string
+}
+
+func (m *Mailer) SendPasswordResetEmail(to string, data ResetPasswordData) error {
+	var htmlBuf, textBuf bytes.Buffer
+	if err := m.htmlTmpl.ExecuteTemplate(&htmlBuf, "reset_password.html", data); err != nil {
+		return fmt.Errorf("render reset password html: %w", err)
+	}
+	if err := m.textTmpl.ExecuteTemplate(&textBuf, "reset_password.txt", data); err != nil {
+		return fmt.Errorf("render reset password text: %w", err)
+	}
+	return m.send(to, "รีเซ็ตรหัสผ่านของคุณ - pdlife.app", htmlBuf.String(), textBuf.String())
+}
+
 const boundary = "pdlife-boundary-7f3a9c"
 
 func (m *Mailer) send(to, subject, htmlBody, textBody string) error {

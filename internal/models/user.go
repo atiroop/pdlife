@@ -15,9 +15,13 @@ const (
 )
 
 type User struct {
-	ID              uint64         `gorm:"column:id;primaryKey"`
-	Email           string         `gorm:"column:email;unique;not null"`
-	PasswordHash    string         `gorm:"column:password_hash;not null"`
+	ID           uint64 `gorm:"column:id;primaryKey"`
+	Email        string `gorm:"column:email;unique;not null"`
+	PasswordHash string `gorm:"column:password_hash;not null"`
+	// SecurityStamp is embedded into every issued JWT and re-checked on
+	// every request; changing it (e.g. on password reset) invalidates
+	// all previously issued access tokens at once.
+	SecurityStamp   string         `gorm:"column:security_stamp;not null;default:''"`
 	Nickname        string         `gorm:"column:nickname;not null"`
 	Role            UserRole       `gorm:"column:role;type:enum('Admin','Member','Unverified');not null;default:Unverified"`
 	IsActive        bool           `gorm:"column:is_active;not null;default:1"`

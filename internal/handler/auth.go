@@ -175,23 +175,13 @@ func (h *AuthHandler) VerifyEmail(c echo.Context) error {
 		return c.Render(http.StatusInternalServerError, "verify_error.html", nil)
 	}
 
-	sessionToken, err := auth.IssueSessionToken(h.Cfg.JWTSecret, user.ID, string(models.RoleMember))
-	if err != nil {
+	user.Role = models.RoleMember
+	if err := h.issueSessionCookies(c, user); err != nil {
 		log.Printf("verify-email: issue session failed: %v", err)
 		return c.Render(http.StatusInternalServerError, "verify_error.html", nil)
 	}
-	c.SetCookie(&http.Cookie{
-		Name:     auth.SessionCookieName,
-		Value:    sessionToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   strings.HasPrefix(h.Cfg.AppBaseURL, "https://"),
-		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(auth.SessionTTL),
-	})
 
-	var profile models.PatientProfile
-	if err := h.DB.Where("user_id = ?", user.ID).First(&profile).Error; err == nil && profile.ProfileCompletedAt != nil {
+	if h.hasCompletedOnboarding(user.ID) {
 		return c.Redirect(http.StatusFound, "/")
 	}
 	return c.Redirect(http.StatusFound, "/onboarding")

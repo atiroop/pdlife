@@ -56,12 +56,6 @@ func main() {
 	e.GET("/", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "index.html", nil)
 	})
-	e.GET("/login", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "placeholder.html", map[string]string{
-			"Title":   "เข้าสู่ระบบ",
-			"Message": "หน้าเข้าสู่ระบบกำลังอยู่ระหว่างพัฒนา เปิดให้ใช้เร็วๆ นี้",
-		})
-	})
 	e.GET("/dashboard-preview", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "dashboard_preview.html", mockDashboardData())
 	})
@@ -99,6 +93,39 @@ func main() {
 		},
 	})
 
+	loginLimiter := echomw.RateLimiterWithConfig(echomw.RateLimiterConfig{
+		Store: echomw.NewRateLimiterMemoryStoreWithConfig(echomw.RateLimiterMemoryStoreConfig{
+			Rate: rate.Limit(10.0 / 3600.0), Burst: 10, ExpiresIn: time.Hour,
+		}),
+		IdentifierExtractor: func(c echo.Context) (string, error) {
+			return c.RealIP(), nil
+		},
+		ErrorHandler: func(c echo.Context, err error) error {
+			return c.String(http.StatusForbidden, "forbidden")
+		},
+		DenyHandler: func(c echo.Context, identifier string, err error) error {
+			return c.String(http.StatusTooManyRequests, "เข้าสู่ระบบบ่อยเกินไป กรุณาลองใหม่ภายหลัง")
+		},
+	})
+	forgotPasswordLimiter := echomw.RateLimiterWithConfig(echomw.RateLimiterConfig{
+		Store: echomw.NewRateLimiterMemoryStoreWithConfig(echomw.RateLimiterMemoryStoreConfig{
+			Rate: rate.Limit(3.0 / 3600.0), Burst: 3, ExpiresIn: time.Hour,
+		}),
+		IdentifierExtractor: func(c echo.Context) (string, error) {
+			email := c.FormValue("email")
+			if email == "" {
+				return c.RealIP(), nil
+			}
+			return email, nil
+		},
+		ErrorHandler: func(c echo.Context, err error) error {
+			return c.String(http.StatusForbidden, "forbidden")
+		},
+		DenyHandler: func(c echo.Context, identifier string, err error) error {
+			return c.String(http.StatusTooManyRequests, "ขอลิงก์บ่อยเกินไป กรุณาลองใหม่ภายหลัง")
+		},
+	})
+
 	e.GET("/register", authHandler.RegisterForm)
 	e.POST("/register", authHandler.Register, registerLimiter)
 	e.GET("/verify-email", authHandler.VerifyEmail)
@@ -106,6 +133,14 @@ func main() {
 	e.POST("/resend-verification", authHandler.ResendVerification, resendLimiter)
 	e.GET("/onboarding", authHandler.OnboardingForm)
 	e.POST("/onboarding", authHandler.OnboardingSubmit)
+
+	e.GET("/login", authHandler.LoginForm)
+	e.POST("/login", authHandler.Login, loginLimiter)
+	e.POST("/logout", authHandler.Logout)
+	e.GET("/forgot-password", authHandler.ForgotPasswordForm)
+	e.POST("/forgot-password", authHandler.ForgotPassword, forgotPasswordLimiter)
+	e.GET("/reset-password", authHandler.ResetPasswordForm)
+	e.POST("/reset-password", authHandler.ResetPassword)
 
 	e.GET("/healthz", func(c echo.Context) error {
 		sqlDB, err := db.DB()

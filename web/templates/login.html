@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เข้าสู่ระบบ — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+<style>
+body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem 1.25rem; }
+.form-card { padding: 2rem 1.75rem; max-width: 26rem; width: 100%; }
+.brand { display: block; text-align: center; font-family: 'Anuphan', sans-serif; font-weight: 800; font-size: 1.15rem;
+  color: var(--color-ink); text-decoration: none; padding-bottom: 3px; border-bottom: 3px solid var(--color-brand);
+  display: inline-block; margin: 0 auto 1.5rem; }
+.form-head { text-align: center; margin-bottom: 1.5rem; }
+label { display: block; font-weight: 700; margin-bottom: 0.4rem; }
+input[type="email"], input[type="password"] {
+  width: 100%; font-family: 'Sarabun', sans-serif; font-size: 1rem;
+  padding: 0.75rem 0.9rem; border: 3px solid var(--color-ink); border-radius: 10px;
+  margin-bottom: 1.1rem; background: var(--color-surface); color: var(--color-ink);
+}
+.error-box {
+  background: var(--color-alert-tint); border: 3px solid var(--color-ink); border-radius: 10px;
+  padding: 0.9rem 1rem; margin-bottom: 1.25rem; font-weight: 700;
+}
+.forgot-link { text-align: right; margin: -0.7rem 0 1.1rem; font-size: 0.9rem; }
+.forgot-link a { color: var(--color-ink); font-weight: 700; }
+.footer-link { text-align: center; margin-top: 1.25rem; font-size: 0.95rem; }
+.footer-link a { color: var(--color-ink); font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="card form-card">
+    <div class="form-head">
+      <a class="brand" href="/">pdlife.app</a>
+      <h1>เข้าสู่ระบบ</h1>
+    </div>
+
+    {{if .Error}}<div class="error-box">{{.Error}}</div>{{end}}
+
+    <form method="POST" action="/login" autocomplete="off">
+      <label for="email">อีเมล</label>
+      <input type="email" id="email" name="email" value="{{.Email}}" required>
+
+      <label for="password">รหัสผ่าน</label>
+      <input type="password" id="password" name="password" required>
+
+      <div class="forgot-link"><a href="/forgot-password">ลืมรหัสผ่าน?</a></div>
+
+      <button type="submit" class="btn btn-primary">เข้าสู่ระบบ</button>
+    </form>
+
+    <div class="footer-link">ยังไม่มีบัญชี? <a href="/register">สมัครใช้งานฟรี</a></div>
+  </div>
+</body>
+</html>

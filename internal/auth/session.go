@@ -1,11 +1,12 @@
 // Package auth provides password hashing, verification tokens, and a
-// minimal JWT session cookie.
+// minimal JWT session (access token) + refresh token cookie pair.
 //
-// The full login/refresh-token endpoints described in
-// docs/auth_flow_spec.md are a separate follow-up task. This session
-// cookie exists only so a user can be identified for the onboarding
-// wizard immediately after verifying their email, without asking them
-// to log in again.
+// The access token is short-lived (SessionTTL) and stateless. The
+// refresh token is long-lived and stored server-side (hashed) in
+// refresh_tokens so it can be revoked. Session.Stamp is checked against
+// users.security_stamp on every request so changing the stamp (e.g. on
+// password reset) invalidates every previously issued access token
+// immediately, without needing a server-side access-token blocklist.
 package auth
 
 import (
@@ -16,18 +17,21 @@ import (
 )
 
 const SessionCookieName = "pdlife_session"
+const RefreshCookieName = "pdlife_refresh"
 const SessionTTL = time.Hour
 
 type SessionClaims struct {
 	UserID uint64 `json:"uid"`
 	Role   string `json:"role"`
+	Stamp  string `json:"stamp"`
 	jwt.RegisteredClaims
 }
 
-func IssueSessionToken(secret string, userID uint64, role string) (string, error) {
+func IssueSessionToken(secret string, userID uint64, role, stamp string) (string, error) {
 	claims := SessionClaims{
 		UserID: userID,
 		Role:   role,
+		Stamp:  stamp,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(SessionTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
