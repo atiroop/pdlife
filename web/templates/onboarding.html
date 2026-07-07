@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตั้งค่าข้อมูลผู้ป่วย — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+<style>
+body { padding: 2rem 1.25rem 3rem; }
+.wrap-narrow { max-width: 30rem; margin: 0 auto; }
+.form-head { margin-bottom: 1.5rem; }
+.form-head h1 { font-size: 1.6rem; }
+.form-head p { color: var(--color-ink); margin-top: 0.4rem; }
+.section-label { font-weight: 700; margin: 1.4rem 0 0.7rem; display: block; }
+
+.card-radio { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.card-option {
+  display: block; padding: 1rem 1.1rem; margin-bottom: 0.9rem;
+  border: 3px solid var(--color-ink); border-radius: 10px; box-shadow: 4px 4px 0 var(--color-ink);
+  background: var(--color-surface); cursor: pointer;
+}
+.card-radio:checked + .card-option { border-color: var(--color-brand); box-shadow: 4px 4px 0 var(--color-brand); }
+.card-option strong { display: block; font-family: 'Anuphan', sans-serif; font-size: 1.05rem; margin-bottom: 0.2rem; }
+.card-option span { font-size: 0.9rem; color: var(--color-ink); }
+.card-note { font-size: 0.85rem; color: var(--color-ink); margin-top: 0.35rem; font-weight: 700; }
+
+label.field-label { display: block; font-weight: 700; margin-bottom: 0.4rem; }
+select, input[type="text"] {
+  width: 100%; font-family: 'Sarabun', sans-serif; font-size: 1rem;
+  padding: 0.75rem 0.9rem; border: 3px solid var(--color-ink); border-radius: 10px;
+  margin-bottom: 1.1rem; background: var(--color-surface); color: var(--color-ink);
+}
+.error-box {
+  background: var(--color-alert-tint); border: 3px solid var(--color-ink); border-radius: 10px;
+  padding: 0.9rem 1rem; margin-bottom: 1.25rem; font-weight: 700;
+}
+.submit-row { margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/">pdlife.app</a>
+  </div>
+</header>
+
+<div class="wrap-narrow">
+  <div class="form-head">
+    <h1>ตั้งค่าข้อมูลผู้ป่วย</h1>
+    <p>กรอกข้อมูลนี้ก่อนเริ่มใช้ Log Book — ใช้เวลาไม่ถึงนาที</p>
+  </div>
+
+  {{if .Error}}<div class="error-box">{{.Error}}</div>{{end}}
+
+  <form method="POST" action="/onboarding">
+    <span class="section-label">วิธีการรักษา</span>
+
+    <input type="radio" name="treatment_type" value="CAPD" id="tt-capd" class="card-radio">
+    <label for="tt-capd" class="card-option">
+      <strong>CAPD</strong>
+      <span>ล้างไตทางช่องท้องแบบต่อเนื่อง</span>
+    </label>
+
+    <input type="radio" name="treatment_type" value="APD" id="tt-apd" class="card-radio">
+    <label for="tt-apd" class="card-option">
+      <strong>APD</strong>
+      <span>ล้างไตทางช่องท้องด้วยเครื่องอัตโนมัติ</span>
+    </label>
+
+    <input type="radio" name="treatment_type" value="HD" id="tt-hd" class="card-radio">
+    <label for="tt-hd" class="card-option">
+      <strong>HD</strong>
+      <span>ฟอกเลือดด้วยเครื่องไตเทียม</span>
+      <span class="card-note">Log book สำหรับ HD จะเปิดให้ใช้เร็วๆ นี้</span>
+    </label>
+
+    <label class="field-label" for="coverage_type">สิทธิการรักษา</label>
+    <select id="coverage_type" name="coverage_type" required>
+      <option value="">— เลือกสิทธิการรักษา —</option>
+      <option value="บัตรทอง">บัตรทอง</option>
+      <option value="ประกันสังคม">ประกันสังคม</option>
+      <option value="ข้าราชการ">ข้าราชการ</option>
+      <option value="อื่นๆ">อื่นๆ</option>
+    </select>
+
+    <label class="field-label" for="hospital_name">โรงพยาบาลที่รักษา</label>
+    <input type="text" id="hospital_name" name="hospital_name" required>
+
+    <div class="submit-row">
+      <button type="submit" class="btn btn-primary">บันทึกข้อมูล</button>
+    </div>
+  </form>
+</div>
+</body>
+</html>

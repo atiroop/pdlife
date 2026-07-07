@@ -8,12 +8,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
+	"golang.org/x/time/rate"
 
 	"github.com/atiroop/pdlife/internal/config"
+	"github.com/atiroop/pdlife/internal/handler"
 	"github.com/atiroop/pdlife/internal/kpi"
+	"github.com/atiroop/pdlife/internal/mailer"
 )
 
 //go:embed web/templates/*.html
@@ -35,6 +39,12 @@ func main() {
 		log.Fatalf("startup aborted: %v", err)
 	}
 
+	m, err := mailer.New(cfg)
+	if err != nil {
+		log.Fatalf("startup aborted: %v", err)
+	}
+	authHandler := handler.NewAuthHandler(db, cfg, m)
+
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(echomw.Logger())
@@ -46,12 +56,6 @@ func main() {
 	e.GET("/", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "index.html", nil)
 	})
-	e.GET("/register", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "placeholder.html", map[string]string{
-			"Title":   "สมัครใช้งาน",
-			"Message": "หน้าสมัครใช้งานกำลังอยู่ระหว่างพัฒนา เปิดให้ใช้เร็วๆ นี้",
-		})
-	})
 	e.GET("/login", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "placeholder.html", map[string]string{
 			"Title":   "เข้าสู่ระบบ",
@@ -61,6 +65,47 @@ func main() {
 	e.GET("/dashboard-preview", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "dashboard_preview.html", mockDashboardData())
 	})
+
+	registerLimiter := echomw.RateLimiterWithConfig(echomw.RateLimiterConfig{
+		Store: echomw.NewRateLimiterMemoryStoreWithConfig(echomw.RateLimiterMemoryStoreConfig{
+			Rate: rate.Limit(5.0 / 3600.0), Burst: 5, ExpiresIn: time.Hour,
+		}),
+		IdentifierExtractor: func(c echo.Context) (string, error) {
+			return c.RealIP(), nil
+		},
+		ErrorHandler: func(c echo.Context, err error) error {
+			return c.String(http.StatusForbidden, "forbidden")
+		},
+		DenyHandler: func(c echo.Context, identifier string, err error) error {
+			return c.String(http.StatusTooManyRequests, "สมัครบ่อยเกินไป กรุณาลองใหม่ภายหลัง")
+		},
+	})
+	resendLimiter := echomw.RateLimiterWithConfig(echomw.RateLimiterConfig{
+		Store: echomw.NewRateLimiterMemoryStoreWithConfig(echomw.RateLimiterMemoryStoreConfig{
+			Rate: rate.Limit(3.0 / 3600.0), Burst: 3, ExpiresIn: time.Hour,
+		}),
+		IdentifierExtractor: func(c echo.Context) (string, error) {
+			email := c.FormValue("email")
+			if email == "" {
+				return c.RealIP(), nil
+			}
+			return email, nil
+		},
+		ErrorHandler: func(c echo.Context, err error) error {
+			return c.String(http.StatusForbidden, "forbidden")
+		},
+		DenyHandler: func(c echo.Context, identifier string, err error) error {
+			return c.String(http.StatusTooManyRequests, "ขอลิงก์บ่อยเกินไป กรุณาลองใหม่ภายหลัง")
+		},
+	})
+
+	e.GET("/register", authHandler.RegisterForm)
+	e.POST("/register", authHandler.Register, registerLimiter)
+	e.GET("/verify-email", authHandler.VerifyEmail)
+	e.GET("/resend-verification", authHandler.ResendVerificationForm)
+	e.POST("/resend-verification", authHandler.ResendVerification, resendLimiter)
+	e.GET("/onboarding", authHandler.OnboardingForm)
+	e.POST("/onboarding", authHandler.OnboardingSubmit)
 
 	e.GET("/healthz", func(c echo.Context) error {
 		sqlDB, err := db.DB()

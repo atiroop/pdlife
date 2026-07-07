@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เสร็จสิ้น — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+<style>
+body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.25rem; }
+.card { padding: 2.25rem 1.75rem; max-width: 26rem; width: 100%; text-align: center; }
+.brand { font-family: 'Anuphan', sans-serif; font-weight: 800; font-size: 1.15rem; color: var(--color-ink);
+  text-decoration: none; display: inline-block; padding-bottom: 3px; border-bottom: 3px solid var(--color-brand); margin-bottom: 1.25rem; }
+h1 { font-size: 1.5rem; margin-bottom: 0.6rem; }
+p { color: var(--color-ink); margin-bottom: 1.5rem; }
+.note { background: var(--color-watch-tint); border: 3px solid var(--color-ink); border-radius: 10px; padding: 0.9rem; font-weight: 700; margin-bottom: 1.5rem; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <a class="brand" href="/">pdlife.app</a>
+    <h1>ตั้งค่าข้อมูลเสร็จสมบูรณ์</h1>
+    {{if .IsHD}}
+      <div class="note">Log book สำหรับ HD จะเปิดให้ใช้เร็วๆ นี้</div>
+      <p>ตอนนี้ยังใช้งาน Log Book สำหรับ HD ไม่ได้ ทีมงานกำลังพัฒนาอยู่</p>
+    {{else}}
+      <p>ยินดีต้อนรับสู่ pdlife.app คุณพร้อมเริ่มใช้งาน Log Book แล้ว</p>
+    {{end}}
+    <a class="btn btn-primary" href="/">กลับหน้าแรก</a>
+  </div>
+</body>
+</html>

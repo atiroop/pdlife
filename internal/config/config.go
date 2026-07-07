@@ -12,6 +12,16 @@ type Config struct {
 	DBUser     string
 	DBPassword string
 	DBName     string
+
+	JWTSecret string
+
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string
+
+	AppBaseURL string
 }
 
 func Load() *Config {
@@ -22,6 +32,16 @@ func Load() *Config {
 		DBUser:     getEnv("DB_USER", ""),
 		DBPassword: getEnv("DB_PASSWORD", ""),
 		DBName:     getEnv("DB_NAME", ""),
+
+		JWTSecret: getEnv("JWT_SECRET", ""),
+
+		SMTPHost:     getEnv("SMTP_HOST", "smtp.resend.com"),
+		SMTPPort:     getEnv("SMTP_PORT", "587"),
+		SMTPUser:     getEnv("SMTP_USER", "resend"),
+		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
+		SMTPFrom:     getEnv("SMTP_FROM", "pdlife.app <noreply@pdlife.app>"),
+
+		AppBaseURL: getEnv("APP_BASE_URL", "https://pdlife.app"),
 	}
 }
 
