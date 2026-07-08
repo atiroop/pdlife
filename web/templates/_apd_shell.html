@@ -7,21 +7,37 @@
   top: 0;
   z-index: 20;
 }
-.apd-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1.25rem; max-width: 1040px; }
-.apd-brand { color: #fff; font-family: 'Anuphan', sans-serif; font-weight: 800; font-size: 1.05rem; text-decoration: none; white-space: nowrap; }
-.apd-nav { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.apd-header .wrap {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem;
+  padding: 0.8rem 1.25rem; max-width: 1040px;
+}
+.apd-brand { color: #fff; font-family: 'Anuphan', sans-serif; font-weight: 800; font-size: 1.05rem; text-decoration: none; white-space: nowrap; flex: 1 1 auto; }
+.apd-nav {
+  display: flex; align-items: center; gap: 0.4rem;
+  order: 3; flex: 1 1 100%;
+  flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
 .apd-nav a {
-  color: #fff; text-decoration: none; font-weight: 700; font-size: 0.85rem;
+  color: #fff; text-decoration: none; font-weight: 700; font-size: 0.85rem; white-space: nowrap;
   padding: 0.45rem 0.85rem; border-radius: 999px; border: 2px solid transparent;
 }
 .apd-nav a.active { border-color: #fff; }
 .apd-nav a:hover { border-color: #fff; }
+.apd-user-form { flex: 0 0 auto; margin-left: auto; }
 .apd-user-form button {
   font-family: inherit; font-weight: 700; font-size: 0.8rem; color: #fff;
   background: transparent; border: 2px solid rgba(255,255,255,0.5); border-radius: 999px;
   padding: 0.4rem 0.8rem; cursor: pointer;
+  display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45vw;
 }
 .apd-user-form button:hover { border-color: #fff; }
+@media (min-width: 760px) {
+  .apd-header .wrap { flex-wrap: nowrap; justify-content: space-between; }
+  .apd-brand { flex: 0 0 auto; }
+  .apd-nav { order: 0; flex: 0 1 auto; overflow-x: visible; }
+  .apd-user-form { margin-left: 0; }
+  .apd-user-form button { max-width: none; }
+}
 .apd-main { max-width: 1040px; margin: 0 auto; padding: 1.75rem 1.25rem 3rem; width: 100%; }
 .apd-page-head { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem; }
 .apd-eyebrow { color: var(--color-brand); font-weight: 800; font-size: 0.75rem; letter-spacing: 0.14em; margin-bottom: 0.4rem; }
