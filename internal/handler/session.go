@@ -142,3 +142,19 @@ func (h *AuthHandler) hasCompletedOnboarding(userID uint64) bool {
 	err := h.DB.Where("user_id = ?", userID).First(&profile).Error
 	return err == nil && profile.ProfileCompletedAt != nil
 }
+
+// postLoginPath decides where a just-authenticated user lands: the log
+// book for their treatment type once onboarding is complete, otherwise
+// the onboarding wizard. Treatment types whose log book isn't built yet
+// (CAPD/HD) fall back to the landing page.
+func (h *AuthHandler) postLoginPath(userID uint64) string {
+	var profile models.PatientProfile
+	err := h.DB.Where("user_id = ?", userID).First(&profile).Error
+	if err != nil || profile.ProfileCompletedAt == nil {
+		return "/onboarding"
+	}
+	if profile.TreatmentType != nil && *profile.TreatmentType == models.TreatmentAPD {
+		return "/apd"
+	}
+	return "/"
+}

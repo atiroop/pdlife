@@ -73,10 +73,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return renderError("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง")
 	}
 
-	if h.hasCompletedOnboarding(user.ID) {
-		return c.Redirect(http.StatusFound, "/")
-	}
-	return c.Redirect(http.StatusFound, "/onboarding")
+	return c.Redirect(http.StatusFound, h.postLoginPath(user.ID))
 }
 
 // ---- POST /logout ----

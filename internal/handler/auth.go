@@ -181,10 +181,7 @@ func (h *AuthHandler) VerifyEmail(c echo.Context) error {
 		return c.Render(http.StatusInternalServerError, "verify_error.html", nil)
 	}
 
-	if h.hasCompletedOnboarding(user.ID) {
-		return c.Redirect(http.StatusFound, "/")
-	}
-	return c.Redirect(http.StatusFound, "/onboarding")
+	return c.Redirect(http.StatusFound, h.postLoginPath(user.ID))
 }
 
 // ---- GET /resend-verification ----
