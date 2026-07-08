@@ -37,14 +37,20 @@
 .rx-grid dt { opacity: 0.55; font-weight: 700; font-size: 0.78rem; }
 .rx-grid dd { font-weight: 700; }
 
-.range-toggle { display: flex; gap: 0.5rem; }
+.toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.25rem; }
+.range-toggle, .export-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .range-toggle a {
   font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.9rem; border-radius: 999px;
   border: 2px solid var(--color-ink); text-decoration: none; color: var(--color-ink);
 }
 .range-toggle a.active { background: var(--color-ink); color: #fff; }
+.toolbar-btn {
+  font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.9rem; border-radius: 999px;
+  border: 2px solid var(--color-ink); text-decoration: none; color: var(--color-ink);
+  background: var(--color-surface);
+}
+.toolbar-btn:active { background: var(--color-paper); }
 
-.export-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.75rem; }
 .empty-state { padding: 2.5rem 1.5rem; text-align: center; }
 .empty-state p { margin-bottom: 0.8rem; opacity: 0.7; }
 </style>
@@ -58,9 +64,17 @@
       <p class="apd-eyebrow">{{"// บันทึก APD ส่วนตัว"}}</p>
       <h1>สมุดบันทึก APD</h1>
     </div>
-    <div class="range-toggle">
-      <a href="/apd?days=7" class="{{if eq .Days 7}}active{{end}}">7 วัน</a>
-      <a href="/apd?days=30" class="{{if eq .Days 30}}active{{end}}">30 วัน</a>
+    <div class="toolbar-row">
+      <div class="range-toggle">
+        <a href="/apd?days=7" class="{{if eq .Days 7}}active{{end}}">7 วัน</a>
+        <a href="/apd?days=30" class="{{if eq .Days 30}}active{{end}}">30 วัน</a>
+      </div>
+      {{if .HasLatest}}
+      <div class="export-actions">
+        <a class="toolbar-btn" href="/apd/export?format=xlsx&days={{.Days}}">Export Excel</a>
+        <a class="toolbar-btn" href="/apd/export?format=pdf&days={{.Days}}">Export PDF</a>
+      </div>
+      {{end}}
     </div>
   </div>
 
@@ -105,11 +119,6 @@
     </dl>
   </div>
   {{end}}
-
-  <div class="export-actions">
-    <a class="btn" href="/apd/export?format=xlsx&days={{.Days}}">Export Excel</a>
-    <a class="btn" href="/apd/export?format=pdf&days={{.Days}}">Export PDF</a>
-  </div>
   {{end}}
 </main>
 
