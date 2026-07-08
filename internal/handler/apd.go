@@ -219,29 +219,9 @@ func (h *AuthHandler) ApdLogsList(c echo.Context) error {
 	h.DB.Where("patient_profile_id = ?", profile.ID).
 		Order("entry_date DESC, id DESC").Find(&logs)
 
-	prescriptionNames := map[uint64]string{}
-	var prescriptions []models.ApdPrescription
-	h.DB.Where("patient_profile_id = ?", profile.ID).Find(&prescriptions)
-	for _, p := range prescriptions {
-		prescriptionNames[p.ID] = p.Name
-	}
-
-	type row struct {
-		models.ApdLogEntry
-		PrescriptionName string
-	}
-	rows := make([]row, len(logs))
-	for i, l := range logs {
-		name := ""
-		if l.PrescriptionID != nil {
-			name = prescriptionNames[*l.PrescriptionID]
-		}
-		rows[i] = row{ApdLogEntry: l, PrescriptionName: name}
-	}
-
 	return c.Render(http.StatusOK, "apd_logs.html", map[string]interface{}{
 		"User": user,
-		"Rows": rows,
+		"Rows": logs,
 	})
 }
 

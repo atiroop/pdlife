@@ -12,13 +12,26 @@
 {{template "apd-shell-css" .}}
 <style>
 .logs-table-wrap { overflow-x: auto; }
-table.logs-table { width: 100%; min-width: 62rem; border-collapse: collapse; font-size: 0.85rem; }
+table.logs-table { width: 100%; min-width: 54rem; border-collapse: collapse; font-size: 0.85rem; }
 table.logs-table th {
   text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
   padding: 0.7rem 0.8rem; border-bottom: 3px solid var(--color-ink); font-weight: 800;
+  background: var(--color-surface);
 }
 table.logs-table td { padding: 0.7rem 0.8rem; border-bottom: 2px solid rgba(21,21,22,0.08); white-space: nowrap; }
 table.logs-table tr:hover td { background: rgba(255,61,110,0.04); }
+/* keep "จัดการ" (edit/delete) reachable on narrow screens no matter how
+   far the table scrolls horizontally */
+table.logs-table th:last-child,
+table.logs-table td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  box-shadow: -6px 0 6px -6px rgba(21,21,22,0.35);
+}
+table.logs-table th:last-child { z-index: 2; }
+table.logs-table tr:hover td:last-child { background: #FFF5F7; }
 .row-actions { display: flex; gap: 0.4rem; }
 .row-actions button, .row-actions a {
   font-family: inherit; font-weight: 800; font-size: 0.8rem; border: none; background: none; cursor: pointer;
@@ -58,7 +71,7 @@ table.logs-table tr:hover td { background: rgba(255,61,110,0.04); }
         <tr>
           <th>วันที่</th><th>เริ่ม</th><th>น้ำหนัก</th><th>ความดัน</th><th>ชีพจร</th>
           <th>น้ำตาล</th><th>I-Drain</th><th>Total UF</th><th>ปัสสาวะ/วัน</th>
-          <th>น้ำยาออก</th><th>ใบสั่งฯ</th><th>จัดการ</th>
+          <th>น้ำยาออก</th><th>จัดการ</th>
         </tr>
       </thead>
       <tbody>
@@ -74,7 +87,6 @@ table.logs-table tr:hover td { background: rgba(255,61,110,0.04); }
           <td class="mono-value">{{.TotalUFML}} ml</td>
           <td class="mono-value">{{.UrineAvgDayML}} ml</td>
           <td>{{if .DrainageAppearance}}{{.DrainageAppearance}}{{else}}—{{end}}</td>
-          <td>{{if .PrescriptionName}}{{.PrescriptionName}}{{else}}—{{end}}</td>
           <td>
             <div class="row-actions">
               <a href="/apd/{{.ID}}/edit">แก้ไข</a>
