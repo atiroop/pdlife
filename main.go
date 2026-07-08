@@ -52,6 +52,41 @@ func main() {
 	funcs := template.FuncMap{
 		"logoURL":     func() string { return cfg.LogoURL },
 		"logoURLDark": func() string { return cfg.LogoURLDark },
+		"dict": func(pairs ...interface{}) (map[string]interface{}, error) {
+			if len(pairs)%2 != 0 {
+				return nil, fmt.Errorf("dict: odd number of arguments")
+			}
+			m := make(map[string]interface{}, len(pairs)/2)
+			for i := 0; i < len(pairs); i += 2 {
+				key, ok := pairs[i].(string)
+				if !ok {
+					return nil, fmt.Errorf("dict: key at index %d is not a string", i)
+				}
+				m[key] = pairs[i+1]
+			}
+			return m, nil
+		},
+		"formatDate": func(t time.Time) string {
+			thaiMonths := []string{"", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."}
+			return fmt.Sprintf("%d %s %d", t.Day(), thaiMonths[int(t.Month())], t.Year()+543)
+		},
+		"formatDateInput": func(t time.Time) string { return t.Format("2006-01-02") },
+		"deref": func(p interface{}) interface{} {
+			switch v := p.(type) {
+			case *int:
+				if v == nil {
+					return nil
+				}
+				return *v
+			case *string:
+				if v == nil {
+					return nil
+				}
+				return *v
+			default:
+				return p
+			}
+		},
 	}
 	e.Renderer = &templateRenderer{
 		templates: template.Must(template.New("").Funcs(funcs).ParseFS(templateFS, "web/templates/*.html")),
@@ -163,6 +198,15 @@ func main() {
 	e.POST("/forgot-password", authHandler.ForgotPassword, forgotPasswordLimiter)
 	e.GET("/reset-password", authHandler.ResetPasswordForm)
 	e.POST("/reset-password", authHandler.ResetPassword)
+
+	e.GET("/apd", authHandler.ApdDashboard)
+	e.GET("/apd/logs", authHandler.ApdLogsList)
+	e.GET("/apd/new", authHandler.ApdNewForm)
+	e.POST("/apd/new", authHandler.ApdCreate)
+	e.GET("/apd/:id/edit", authHandler.ApdEditForm)
+	e.POST("/apd/:id/edit", authHandler.ApdUpdate)
+	e.POST("/apd/:id/delete", authHandler.ApdDelete)
+	e.GET("/apd/export", authHandler.ApdExport)
 
 	e.GET("/healthz", func(c echo.Context) error {
 		sqlDB, err := db.DB()

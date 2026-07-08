@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{if .IsEditing}}แก้ไขบันทึก{{else}}บันทึกใหม่{{end}} APD — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "apd-shell-css" .}}
+<style>
+.form-panel { padding: 1.4rem 1.4rem 1.6rem; margin-bottom: 1.25rem; }
+.form-panel h2 { font-size: 1.1rem; margin-bottom: 0.9rem; }
+.field-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 640px) { .field-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 940px) { .field-grid { grid-template-columns: repeat(3, 1fr); } }
+.field label { display: block; font-weight: 800; font-size: 0.85rem; margin-bottom: 0.4rem; }
+.field input, .field select, .field textarea {
+  width: 100%; font-family: inherit; font-size: 0.92rem; font-weight: 600;
+  padding: 0.7rem 0.85rem; border-radius: 8px; border: 2px solid rgba(21,21,22,0.18);
+  background: #fff; color: var(--color-ink);
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--color-brand);
+}
+.field textarea { resize: vertical; }
+.checkbox-row { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.88rem; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: center; margin-top: 0.5rem; }
+.error-banner {
+  border: var(--border); border-radius: var(--radius); background: var(--color-alert-tint);
+  color: var(--color-alert); font-weight: 800; padding: 0.8rem 1rem; margin-bottom: 1.25rem;
+}
+.btn-danger { color: var(--color-alert); }
+</style>
+</head>
+<body>
+{{template "apd-header" (dict "Active" "new" "User" .User)}}
+
+<main class="apd-main">
+  <div class="apd-page-head">
+    <div>
+      <p class="apd-eyebrow">{{if .IsEditing}}{{"// แก้ไขบันทึก"}}{{else}}{{"// บันทึกใหม่"}}{{end}}</p>
+      <h1>{{if .IsEditing}}แก้ไขบันทึก APD{{else}}บันทึกข้อมูล APD รายวัน{{end}}</h1>
+    </div>
+  </div>
+
+  {{if .Error}}<div class="error-banner">{{.Error}}</div>{{end}}
+
+  <form method="post" action="{{if .IsEditing}}/apd/{{.Log.ID}}/edit{{else}}/apd/new{{end}}">
+    <section class="card form-panel">
+      <h2>ข้อมูลประจำวัน</h2>
+      <div class="field-grid">
+        <div class="field">
+          <label>วันที่</label>
+          <input type="date" name="date" required value="{{if .Log}}{{formatDateInput .Log.EntryDate}}{{else}}{{.Today}}{{end}}">
+        </div>
+        <div class="field">
+          <label>เวลาเริ่มทำ APD</label>
+          <input type="time" name="treatmentStartTime" required value="{{if .Log}}{{.Log.TreatmentStartTime}}{{end}}">
+        </div>
+        <div class="field">
+          <label>น้ำหนัก (kg)</label>
+          <input type="number" name="weightKg" min="0" step="0.01" required value="{{if .Log}}{{printf "%.2f" .Log.WeightKG}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ความดันตัวบน (Systolic BP)</label>
+          <input type="number" name="systolicBp" min="0" required value="{{if .Log}}{{.Log.BPSystolic}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ความดันตัวล่าง (Diastolic BP)</label>
+          <input type="number" name="diastolicBp" min="0" required value="{{if .Log}}{{.Log.BPDiastolic}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ชีพจร</label>
+          <input type="number" name="pulse" min="0" required value="{{if .Log}}{{.Log.Pulse}}{{end}}">
+        </div>
+        <div class="field">
+          <label>น้ำตาลในเลือด (mg/dL)</label>
+          <input type="number" name="bloodGlucoseMgDl" min="0" value="{{if and .Log .Log.BloodGlucoseMgDL}}{{.Log.BloodGlucoseMgDL}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ปริมาณ I-Drain (ml)</label>
+          <input type="number" name="iDrainVolumeMl" required value="{{if .Log}}{{.Log.IDrainVolumeML}}{{end}}">
+        </div>
+        <div class="field">
+          <label>Total UF (ml)</label>
+          <input type="number" name="totalUfMl" required value="{{if .Log}}{{.Log.TotalUFML}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ปัสสาวะเฉลี่ย/วัน (ml)</label>
+          <input type="number" name="urineAvgDayMl" min="0" required value="{{if .Log}}{{.Log.UrineAvgDayML}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ลักษณะน้ำยาออก</label>
+          <select name="drainageAppearance">
+            <option value="">ไม่ได้บันทึก</option>
+            {{$current := ""}}{{if and .Log .Log.DrainageAppearance}}{{$current = deref .Log.DrainageAppearance}}{{end}}
+            {{range .DrainageAppearanceOptions}}
+            <option value="{{.}}" {{if eq . $current}}selected{{end}}>{{.}}</option>
+            {{end}}
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin-top:1rem;">
+        <label>หมายเหตุ</label>
+        <textarea name="remark" rows="3">{{if and .Log .Log.Remark}}{{deref .Log.Remark}}{{end}}</textarea>
+      </div>
+    </section>
+
+    <section class="card form-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.8rem;">
+        <h2 style="margin:0;">ใบสั่งการรักษา</h2>
+        <label class="checkbox-row">
+          <input type="checkbox" name="isDefaultProfile" {{if .Prescription.IsDefaultProfile}}checked{{end}}>
+          ใช้เป็นโปรไฟล์เริ่มต้น
+        </label>
+      </div>
+      <div class="field-grid" style="margin-top:1rem;">
+        <div class="field">
+          <label>ชื่อโปรไฟล์</label>
+          <input type="text" name="prescriptionName" required value="{{.Prescription.Name}}">
+        </div>
+        <div class="field">
+          <label>น้ำยาถุงที่ 1</label>
+          <input type="text" name="solutionBag1" required value="{{.Prescription.SolutionBag1}}">
+        </div>
+        <div class="field">
+          <label>น้ำยาถุงที่ 2</label>
+          <input type="text" name="solutionBag2" required value="{{.Prescription.SolutionBag2}}">
+        </div>
+        <div class="field">
+          <label>ปริมาตรรวม (ml)</label>
+          <input type="number" name="totalVolumeMl" min="0" required value="{{.Prescription.TotalVolumeML}}">
+        </div>
+        <div class="field">
+          <label>เวลารักษารวม (นาที)</label>
+          <input type="number" name="therapyTimeMinutes" min="0" required value="{{.Prescription.TherapyTimeMinutes}}">
+        </div>
+        <div class="field">
+          <label>ปริมาตรเติมแต่ละรอบ (ml)</label>
+          <input type="number" name="fillVolumeMl" min="0" required value="{{.Prescription.FillVolumeML}}">
+        </div>
+        <div class="field">
+          <label>จำนวนรอบ</label>
+          <input type="number" name="cycles" min="0" required value="{{.Prescription.Cycles}}">
+        </div>
+        <div class="field">
+          <label>เวลาค้างน้ำยา (นาที)</label>
+          <input type="number" name="dwellTimeMinutes" min="0" required value="{{.Prescription.DwellTimeMinutes}}">
+        </div>
+        <div class="field">
+          <label>น้ำยาค้างสุดท้าย (Last fill ml)</label>
+          <input type="number" name="lastFillMl" min="0" value="{{if .Prescription.LastFillML}}{{deref .Prescription.LastFillML}}{{else}}0{{end}}">
+        </div>
+      </div>
+      <div class="field" style="margin-top:1rem;">
+        <label>การเปลี่ยนน้ำยาแบบ Manual</label>
+        <textarea name="manualExchange" rows="2">{{if .Prescription.ManualExchange}}{{deref .Prescription.ManualExchange}}{{end}}</textarea>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" style="width:auto;">{{if .IsEditing}}อัปเดตบันทึก{{else}}บันทึกข้อมูล{{end}}</button>
+      <a class="btn" href="{{if .IsEditing}}/apd/logs{{else}}/apd{{end}}" style="width:auto;">ยกเลิก</a>
+    </div>
+  </form>
+
+  {{if .IsEditing}}
+  <form method="post" action="/apd/{{.Log.ID}}/delete" onsubmit="return confirm('ลบบันทึกนี้?');" style="margin-top:0.75rem;">
+    <button type="submit" class="btn btn-danger" style="width:auto;display:inline-block;">ลบบันทึกนี้</button>
+  </form>
+  {{end}}
+</main>
+
+{{template "cookie-consent" .}}
+</body>
+</html>

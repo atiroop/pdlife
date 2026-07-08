@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สมุดบันทึก APD — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "apd-shell-css" .}}
+<style>
+.kpi-grid { display: grid; grid-template-columns: 1fr; gap: 1.1rem; margin-bottom: 1.75rem; }
+.kpi-card { padding: 1.2rem 1.3rem 1.1rem; }
+.kpi-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.6rem; }
+.kpi-title { font-weight: 700; font-size: 0.95rem; }
+.kpi-number { font-size: 1.9rem; }
+.kpi-unit { font-size: 1rem; font-weight: 400; margin-left: 0.25rem; }
+.kpi-meta { margin-top: 0.35rem; font-size: 0.85rem; opacity: 0.75; }
+@media (min-width: 720px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 980px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.section-title { font-size: 1.1rem; margin: 1.75rem 0 0.9rem; }
+.trend-grid { display: grid; grid-template-columns: 1fr; gap: 1.1rem; }
+@media (min-width: 860px) { .trend-grid { grid-template-columns: repeat(2, 1fr); } }
+.trend-card { padding: 1.1rem 1.2rem 1.3rem; }
+.trend-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.6rem; }
+.trend-unit { font-size: 0.8rem; opacity: 0.6; font-weight: 700; }
+.trend-svg-wrap { border: 2px solid rgba(21,21,22,0.12); border-radius: 8px; background: #FBF9FF; overflow: hidden; }
+.trend-svg { width: 100%; height: auto; display: block; }
+.trend-empty { height: 10rem; display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(21,21,22,0.2); border-radius: 8px; font-weight: 700; opacity: 0.6; font-size: 0.9rem; }
+
+.rx-card { padding: 1.2rem 1.3rem; margin-top: 1.75rem; }
+.rx-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem 1.2rem; margin-top: 0.9rem; font-size: 0.9rem; }
+@media (min-width: 640px) { .rx-grid { grid-template-columns: repeat(3, 1fr); } }
+.rx-grid dt { opacity: 0.55; font-weight: 700; font-size: 0.78rem; }
+.rx-grid dd { font-weight: 700; }
+
+.range-toggle { display: flex; gap: 0.5rem; }
+.range-toggle a {
+  font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.9rem; border-radius: 999px;
+  border: 2px solid var(--color-ink); text-decoration: none; color: var(--color-ink);
+}
+.range-toggle a.active { background: var(--color-ink); color: #fff; }
+
+.export-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.75rem; }
+.empty-state { padding: 2.5rem 1.5rem; text-align: center; }
+.empty-state p { margin-bottom: 0.8rem; opacity: 0.7; }
+</style>
+</head>
+<body>
+{{template "apd-header" (dict "Active" "dashboard" "User" .User)}}
+
+<main class="apd-main">
+  <div class="apd-page-head">
+    <div>
+      <p class="apd-eyebrow">{{"// บันทึก APD ส่วนตัว"}}</p>
+      <h1>สมุดบันทึก APD</h1>
+    </div>
+    <div class="range-toggle">
+      <a href="/apd?days=7" class="{{if eq .Days 7}}active{{end}}">7 วัน</a>
+      <a href="/apd?days=30" class="{{if eq .Days 30}}active{{end}}">30 วัน</a>
+    </div>
+  </div>
+
+  {{if not .HasLatest}}
+  <div class="card empty-state">
+    <p>ยังไม่มีบันทึก APD</p>
+    <a class="btn btn-primary" href="/apd/new" style="display:inline-block;width:auto;">+ บันทึกแรก</a>
+  </div>
+  {{else}}
+  <div class="kpi-grid">
+    {{range .Cards}}
+    <div class="card kpi-card status-{{.Status}}">
+      <div class="kpi-top">
+        <span class="kpi-title">{{.Title}}</span>
+        <span class="pill pill-{{.Status}}">{{.StatusLabel}}</span>
+      </div>
+      <div class="kpi-number mono-value">{{.Value}}<span class="kpi-unit">{{.Unit}}</span></div>
+      <div class="kpi-meta">{{.Meta}}</div>
+    </div>
+    {{end}}
+  </div>
+
+  <h2 class="section-title">แนวโน้ม ({{.Days}} วัน)</h2>
+  <div class="trend-grid">
+    {{.UFChart}}
+    {{.WeightChart}}
+    {{.BPChart}}
+  </div>
+
+  {{if .LatestPrescription}}
+  <div class="card rx-card">
+    <h2 class="section-title" style="margin:0;">ใบสั่งการรักษาล่าสุด — {{.LatestPrescription.Name}}</h2>
+    <dl class="rx-grid">
+      <div><dt>น้ำยาถุงที่ 1</dt><dd>{{.LatestPrescription.SolutionBag1}}</dd></div>
+      <div><dt>น้ำยาถุงที่ 2</dt><dd>{{.LatestPrescription.SolutionBag2}}</dd></div>
+      <div><dt>ปริมาตรรวม</dt><dd>{{.LatestPrescription.TotalVolumeML}} ml</dd></div>
+      <div><dt>เวลารักษารวม</dt><dd>{{.LatestPrescription.TherapyTimeMinutes}} นาที</dd></div>
+      <div><dt>ปริมาตรเติมแต่ละรอบ</dt><dd>{{.LatestPrescription.FillVolumeML}} ml</dd></div>
+      <div><dt>จำนวนรอบ</dt><dd>{{.LatestPrescription.Cycles}}</dd></div>
+      <div><dt>เวลาค้างน้ำยา</dt><dd>{{.LatestPrescription.DwellTimeMinutes}} นาที</dd></div>
+      {{if .LatestPrescription.LastFillML}}<div><dt>น้ำยาค้างสุดท้าย</dt><dd>{{.LatestPrescription.LastFillML}} ml</dd></div>{{end}}
+    </dl>
+  </div>
+  {{end}}
+
+  <div class="export-actions">
+    <a class="btn" href="/apd/export?format=xlsx&days={{.Days}}">Export Excel</a>
+    <a class="btn" href="/apd/export?format=pdf&days={{.Days}}">Export PDF</a>
+  </div>
+  {{end}}
+</main>
+
+{{template "cookie-consent" .}}
+</body>
+</html>

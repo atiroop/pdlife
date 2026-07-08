@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>รายการบันทึก APD — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "apd-shell-css" .}}
+<style>
+.logs-table-wrap { overflow-x: auto; }
+table.logs-table { width: 100%; min-width: 62rem; border-collapse: collapse; font-size: 0.85rem; }
+table.logs-table th {
+  text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 0.7rem 0.8rem; border-bottom: 3px solid var(--color-ink); font-weight: 800;
+}
+table.logs-table td { padding: 0.7rem 0.8rem; border-bottom: 2px solid rgba(21,21,22,0.08); white-space: nowrap; }
+table.logs-table tr:hover td { background: rgba(255,61,110,0.04); }
+.row-actions { display: flex; gap: 0.4rem; }
+.row-actions button, .row-actions a {
+  font-family: inherit; font-weight: 800; font-size: 0.8rem; border: none; background: none; cursor: pointer;
+  padding: 0.3rem 0.6rem; border-radius: 999px; text-decoration: none;
+}
+.row-actions a { color: #7C3AED; }
+.row-actions a:hover { background: #EDE9FE; }
+.row-actions button { color: #E11D48; }
+.row-actions button:hover { background: #FCE7F3; }
+.count-note { opacity: 0.6; font-size: 0.85rem; margin-top: 0.3rem; }
+.empty-state { padding: 2.5rem 1.5rem; text-align: center; }
+.empty-state p { margin-bottom: 0.8rem; opacity: 0.7; }
+</style>
+</head>
+<body>
+{{template "apd-header" (dict "Active" "logs" "User" .User)}}
+
+<main class="apd-main">
+  <div class="apd-page-head">
+    <div>
+      <p class="apd-eyebrow">{{"// รายการย้อนหลัง"}}</p>
+      <h1>รายการบันทึก APD</h1>
+      <p class="count-note">{{len .Rows}} รายการ</p>
+    </div>
+    <a class="btn btn-primary" href="/apd/new" style="display:inline-block;width:auto;">+ บันทึกใหม่</a>
+  </div>
+
+  {{if not .Rows}}
+  <div class="card empty-state">
+    <p>ยังไม่มีบันทึก APD</p>
+    <a class="btn btn-primary" href="/apd/new" style="display:inline-block;width:auto;">สร้างบันทึกแรก</a>
+  </div>
+  {{else}}
+  <div class="card logs-table-wrap">
+    <table class="logs-table">
+      <thead>
+        <tr>
+          <th>วันที่</th><th>เริ่ม</th><th>น้ำหนัก</th><th>ความดัน</th><th>ชีพจร</th>
+          <th>น้ำตาล</th><th>I-Drain</th><th>Total UF</th><th>ปัสสาวะ/วัน</th>
+          <th>น้ำยาออก</th><th>ใบสั่งฯ</th><th>จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Rows}}
+        <tr>
+          <td class="mono-value">{{formatDate .EntryDate}}</td>
+          <td>{{.TreatmentStartTime}}</td>
+          <td class="mono-value">{{printf "%.2f" .WeightKG}} kg</td>
+          <td class="mono-value">{{.BPSystolic}}/{{.BPDiastolic}}</td>
+          <td class="mono-value">{{.Pulse}}</td>
+          <td class="mono-value">{{if .BloodGlucoseMgDL}}{{.BloodGlucoseMgDL}}{{else}}—{{end}}</td>
+          <td class="mono-value">{{.IDrainVolumeML}} ml</td>
+          <td class="mono-value">{{.TotalUFML}} ml</td>
+          <td class="mono-value">{{.UrineAvgDayML}} ml</td>
+          <td>{{if .DrainageAppearance}}{{.DrainageAppearance}}{{else}}—{{end}}</td>
+          <td>{{if .PrescriptionName}}{{.PrescriptionName}}{{else}}—{{end}}</td>
+          <td>
+            <div class="row-actions">
+              <a href="/apd/{{.ID}}/edit">แก้ไข</a>
+              <form method="post" action="/apd/{{.ID}}/delete" onsubmit="return confirm('ลบบันทึกวันที่ {{formatDate .EntryDate}}?');">
+                <button type="submit">ลบ</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{end}}
+</main>
+
+{{template "cookie-consent" .}}
+</body>
+</html>
