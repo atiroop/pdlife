@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Food Check — ค้นหาโภชนาการอาหาร — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+{{template "foodcheck-extra-css" .}}
+<style>
+.fc-search-form { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.5rem; }
+.fc-search-form input[type=search] {
+  flex: 1 1 14rem; padding: 0.7rem 1rem; font-size: 1rem; font-family: inherit;
+  border: var(--border); border-radius: var(--radius); background: var(--color-surface);
+}
+.fc-search-form select {
+  padding: 0.7rem 0.9rem; font-size: 0.95rem; font-family: inherit;
+  border: var(--border); border-radius: var(--radius); background: var(--color-surface);
+}
+
+#fc-results { transition: opacity 0.15s ease; }
+.fc-table-wrap { overflow-x: auto; padding: 0; }
+table.fc-results-table { width: 100%; min-width: 42rem; border-collapse: collapse; font-size: 0.88rem; }
+table.fc-results-table th {
+  text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 0.7rem 0.8rem; border-bottom: 3px solid var(--color-ink); font-weight: 800;
+  background: var(--color-surface); white-space: nowrap;
+}
+table.fc-results-table th.fc-num, table.fc-results-table td.fc-num { text-align: right; }
+table.fc-results-table td {
+  padding: 0.65rem 0.8rem; border-bottom: 2px solid rgba(21,21,22,0.08); vertical-align: middle;
+}
+table.fc-results-table tr.fc-row { cursor: pointer; }
+table.fc-results-table tr.fc-row:hover td { background: rgba(255,61,110,0.05); }
+table.fc-results-table tr.fc-row:hover td.fc-cell-good  { background: var(--color-good-tint); }
+table.fc-results-table tr.fc-row:hover td.fc-cell-watch { background: var(--color-watch-tint); }
+table.fc-results-table tr.fc-row:hover td.fc-cell-alert { background: var(--color-alert-tint); }
+table.fc-results-table tr.fc-row:focus-visible { outline: 3px solid var(--color-brand); outline-offset: -3px; }
+
+.fc-name-th { font-weight: 700; }
+.fc-name-en { font-size: 0.78rem; opacity: 0.6; }
+.fc-source-tag { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; opacity: 0.5; margin-left: 0.35em; white-space: nowrap; }
+
+.fc-num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Light status tints — reuse the same --color-*-tint tokens the KPI cards
+   use elsewhere (already contrast-checked against --color-ink there), not
+   the solid pill-* colors from the detail page. Text stays --color-ink. */
+td.fc-cell-good  { background: var(--color-good-tint); }
+td.fc-cell-watch { background: var(--color-watch-tint); }
+td.fc-cell-alert { background: var(--color-alert-tint); }
+.fc-protein-star { color: var(--color-brand); margin-right: 0.25em; }
+
+.fc-empty { padding: 2.5rem 1.5rem; text-align: center; opacity: 0.7; }
+.fc-skeleton-row td { color: transparent; background: rgba(21,21,22,0.05); }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+{{template "foodcheck-attribution" .}}
+
+<main class="app-main">
+  <p class="app-eyebrow">{{"// ค้นหาข้อมูลโภชนาการอาหารไทย"}}</p>
+  <h1>Food Check</h1>
+
+  <form class="fc-search-form" method="get" action="/food-check">
+    <input type="search" name="q" placeholder="ค้นหาชื่ออาหาร (ไทย/อังกฤษ) หรือรหัสอาหาร" value="{{.Query}}" minlength="2" autocomplete="off">
+    <select name="group">
+      <option value="">ทุกหมวดหมู่ (INMU)</option>
+      {{range .Groups}}
+      <option value="{{.Status}}" {{if eq $.Group .Status}}selected{{end}}>{{.Status}} — {{.NameEn}}</option>
+      {{end}}
+    </select>
+    <button type="submit" class="btn btn-primary">ค้นหา</button>
+  </form>
+
+  <div id="fc-results">{{template "fc-results-fragment" .}}</div>
+
+  {{template "foodcheck-disclaimer" .Disclaimer}}
+</main>
+
+<script>
+(function () {
+  var qInput = document.querySelector('.fc-search-form input[name=q]');
+  var groupSelect = document.querySelector('.fc-search-form select[name=group]');
+  var form = document.querySelector('.fc-search-form');
+  var results = document.getElementById('fc-results');
+  var debounceTimer = null;
+
+  function shouldSearch(q, group) {
+    return Array.from(q.trim()).length >= 2 || group !== '';
+  }
+
+  function runSearch() {
+    var q = qInput.value;
+    var group = groupSelect.value;
+
+    var pageURL = '/food-check?q=' + encodeURIComponent(q) + '&group=' + encodeURIComponent(group);
+    window.history.replaceState(null, '', pageURL);
+
+    if (!shouldSearch(q, group)) {
+      results.innerHTML = '';
+      return;
+    }
+
+    results.style.opacity = '0.5';
+    var fetchURL = '/food-check/results?q=' + encodeURIComponent(q) + '&group=' + encodeURIComponent(group);
+    fetch(fetchURL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (res) {
+        if (!res.ok || res.redirected) { throw new Error('session expired'); }
+        return res.text();
+      })
+      .then(function (html) {
+        results.innerHTML = html;
+        results.style.opacity = '1';
+      })
+      .catch(function () {
+        window.location.reload();
+      });
+  }
+
+  qInput.addEventListener('input', function () {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(runSearch, 300);
+  });
+  groupSelect.addEventListener('change', function () {
+    clearTimeout(debounceTimer);
+    runSearch();
+  });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    clearTimeout(debounceTimer);
+    runSearch();
+  });
+})();
+</script>
+</body>
+</html>
+
+{{define "fc-results-fragment"}}
+{{if .Searched}}
+  {{if .Results}}
+  <div class="card fc-table-wrap">
+    <table class="fc-results-table">
+      <thead>
+        <tr>
+          <th>ชื่ออาหาร</th>
+          <th class="fc-num">พลังงาน</th>
+          <th class="fc-num">โปรตีน</th>
+          <th class="fc-num">P</th>
+          <th class="fc-num">K</th>
+          <th class="fc-num">Na</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Results}}
+        {{$sourcePath := "inmu"}}
+        {{if eq .Source "thaifcd_anamai"}}{{$sourcePath = "anamai"}}{{end}}
+        {{$href := printf "/food-check/food/%s/%s" $sourcePath .Ref}}
+        <tr class="fc-row" tabindex="0" role="link" aria-label="{{.NameTh}}"
+            onclick="window.location='{{$href}}'"
+            onkeydown="if(event.key==='Enter'){window.location='{{$href}}'}">
+          <td>
+            <div class="fc-name-th">{{.NameTh}}<span class="fc-source-tag">{{if eq .Source "thaifcd_anamai"}}กรมอนามัย{{else}}INMU{{end}}</span></div>
+            <div class="fc-name-en">{{.NameEn}}{{if .FoodCode}} · {{.FoodCode}}{{end}}</div>
+          </td>
+          <td class="fc-num">{{if eq .Energy.Badge.Level "unknown"}}—{{else}}{{fmtNutrient .Energy.ValuePer100G}}{{end}}</td>
+          <td class="fc-num">{{if eq .Protein.Badge.Level "unknown"}}—{{else if eq .Protein.Badge.Level "positive"}}<span class="fc-protein-star" title="แหล่งโปรตีนดี" aria-hidden="true">★</span>{{fmtNutrient .Protein.ValuePer100G}}{{else}}{{fmtNutrient .Protein.ValuePer100G}}{{end}}</td>
+          <td class="fc-num{{if eq .Phosphorus.Badge.Level "good"}} fc-cell-good{{else if eq .Phosphorus.Badge.Level "watch"}} fc-cell-watch{{else if eq .Phosphorus.Badge.Level "alert"}} fc-cell-alert{{end}}">{{if eq .Phosphorus.Badge.Level "unknown"}}—{{else}}{{fmtNutrient .Phosphorus.ValuePer100G}}{{end}}</td>
+          <td class="fc-num{{if eq .Potassium.Badge.Level "good"}} fc-cell-good{{else if eq .Potassium.Badge.Level "watch"}} fc-cell-watch{{else if eq .Potassium.Badge.Level "alert"}} fc-cell-alert{{end}}">{{if eq .Potassium.Badge.Level "unknown"}}—{{else}}{{fmtNutrient .Potassium.ValuePer100G}}{{end}}</td>
+          <td class="fc-num{{if eq .Sodium.Badge.Level "good"}} fc-cell-good{{else if eq .Sodium.Badge.Level "watch"}} fc-cell-watch{{else if eq .Sodium.Badge.Level "alert"}} fc-cell-alert{{end}}">{{if eq .Sodium.Badge.Level "unknown"}}—{{else}}{{fmtNutrient .Sodium.ValuePer100G}}{{end}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <div class="card fc-empty">
+    <p>ไม่พบรายการอาหารที่ค้นหา ลองคำค้นอื่น หรือเลือกหมวดหมู่</p>
+  </div>
+  {{end}}
+{{end}}
+{{end}}

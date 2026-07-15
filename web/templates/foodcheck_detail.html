@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.NameTh}} — Food Check — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+{{template "foodcheck-extra-css" .}}
+<style>
+.fc-back { display: inline-block; margin-bottom: 1rem; font-weight: 700; font-size: 0.85rem; text-decoration: none; color: var(--color-ink); opacity: 0.7; }
+.fc-food-name-en { opacity: 0.6; margin-bottom: 0.3rem; }
+.fc-food-meta { font-size: 0.85rem; opacity: 0.55; margin-bottom: 1.25rem; }
+
+.fc-hidden { display: none; }
+
+.fc-amount-card { padding: 1.1rem 1.2rem; margin-bottom: 1.5rem; }
+.fc-amount-row { display: flex; flex-direction: column; gap: 0.6rem; }
+@media (min-width: 640px) { .fc-amount-row { flex-direction: row; align-items: center; justify-content: space-between; } }
+.fc-amount-label { font-weight: 800; font-size: 0.9rem; }
+.fc-amount-controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.fc-amount-btn {
+  width: 2.4rem; height: 2.4rem; flex-shrink: 0; font-size: 1.3rem; font-weight: 800;
+  border: 2px solid var(--color-ink); border-radius: 8px; background: var(--color-surface);
+  color: var(--color-ink); cursor: pointer; line-height: 1;
+}
+.fc-amount-btn:active { transform: translate(1px, 1px); }
+.fc-amount-input {
+  width: 5.5rem; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 1.05rem; font-weight: 700;
+  padding: 0.5rem 0.4rem; border: 2px solid var(--color-ink); border-radius: 8px; background: var(--color-surface); color: var(--color-ink);
+}
+.fc-unit-select {
+  flex: 1 1 10rem; min-width: 9rem; font-family: 'Sarabun', sans-serif; font-size: 0.92rem; font-weight: 600;
+  padding: 0.55rem 0.6rem; border: 2px solid var(--color-ink); border-radius: 8px; background: var(--color-surface); color: var(--color-ink);
+}
+.fc-unit-select option:disabled { color: #999; }
+.fc-density-hint { margin-top: 0.7rem; font-size: 0.8rem; opacity: 0.75; }
+.fc-amount-error { margin-top: 0.7rem; font-size: 0.82rem; font-weight: 700; color: var(--color-alert); }
+
+.fc-pd-grid { display: grid; grid-template-columns: 1fr; gap: 0.7rem; margin-bottom: 1.75rem; }
+@media (min-width: 640px) { .fc-pd-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 900px) { .fc-pd-grid { grid-template-columns: repeat(3, 1fr); } }
+.fc-pd-item { padding: 0.9rem 1rem; }
+.fc-pd-label { font-weight: 700; font-size: 0.85rem; margin-bottom: 0.4rem; }
+.fc-pd-value { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+
+.fc-table-wrap { overflow-x: auto; }
+table.fc-nutrient-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+table.fc-nutrient-table th, table.fc-nutrient-table td { text-align: left; padding: 0.5rem 0.7rem; border-bottom: 1px solid rgba(21,21,22,0.1); }
+table.fc-nutrient-table tr.fc-pd-row { background: var(--color-watch-tint); }
+table.fc-nutrient-table td.fc-num { font-family: 'JetBrains Mono', monospace; text-align: right; }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+{{template "foodcheck-attribution" .}}
+
+<main class="app-main">
+  <a class="fc-back" href="/food-check">&larr; กลับไปค้นหา</a>
+  <p class="app-eyebrow">{{if eq .Source "anamai"}}กรมอนามัย{{else}}Thai FCD (INMU){{end}}</p>
+  <h1>{{.NameTh}}</h1>
+  <p class="fc-food-name-en">{{.NameEn}}</p>
+  <p class="fc-food-meta">{{if .FoodCode}}รหัส {{.FoodCode}}{{end}}{{if .GroupName}} · {{.GroupName}}{{end}} · <span id="fcMetaAmount">ค่าต่อ 100 กรัม</span></p>
+
+  <div class="card fc-amount-card">
+    <div class="fc-amount-row">
+      <span class="fc-amount-label">ปรับปริมาณที่กิน</span>
+      <div class="fc-amount-controls">
+        <button type="button" class="fc-amount-btn" id="fcAmountMinus" aria-label="ลดปริมาณ">&minus;</button>
+        <input type="number" id="fcAmountInput" class="fc-amount-input" value="100" min="0.01" step="1" inputmode="decimal">
+        <button type="button" class="fc-amount-btn" id="fcAmountPlus" aria-label="เพิ่มปริมาณ">+</button>
+        <select id="fcUnitSelect" class="fc-unit-select">
+          {{range .ConvUnits}}
+          <option value="{{.Code}}" data-gpu="{{.GpuStr}}"{{if not .Available}} disabled{{end}}>{{.Label}}{{if not .Available}} — ไม่มีข้อมูลความหนาแน่น{{end}}</option>
+          {{end}}
+        </select>
+      </div>
+    </div>
+    <p class="fc-density-hint{{if and .Conversions.DensityAvailable (not .Conversions.IsFallback)}} fc-hidden{{end}}" id="fcDensityHint">
+      {{if .Conversions.DensityAvailable}}{{if .Conversions.IsFallback}}&#9888; ค่าประมาณ &mdash; {{.Conversions.Note}}{{end}}{{else}}อาหารนี้ไม่มีข้อมูลความหนาแน่น ใช้ได้เฉพาะหน่วยน้ำหนัก (g/kg/oz){{end}}
+    </p>
+    <p class="fc-amount-error fc-hidden" id="fcAmountError"></p>
+  </div>
+
+  <div class="fc-pd-grid">
+    {{range .Badges}}
+    <div class="card fc-pd-item">
+      <div class="fc-pd-label">{{.DisplayNameTh}}</div>
+      <div class="fc-pd-value" data-pd-value="{{.NutrientName}}">{{fmtNutrient .ValuePer100G}} {{.Unit}}</div>
+      <span class="pill {{.Badge.Level.CSSClass}}{{if not .Badge.Level.CSSClass}} fc-hidden{{end}}" data-pd-pill="{{.NutrientName}}"{{if .Badge.Tooltip}} title="{{.Badge.Tooltip}}"{{end}}>{{.Badge.Text}}{{if .Badge.Detail}} · {{.Badge.Detail}}{{end}}</span>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="card fc-table-wrap">
+    <table class="fc-nutrient-table">
+      <thead><tr><th>สารอาหาร</th><th>หน่วย</th><th style="text-align:right" id="fcTableAmountHead">ค่าต่อ 100g</th></tr></thead>
+      <tbody>
+        {{range .AllNutrients}}
+        <tr{{if index $.PDNames .CanonicalName}} class="fc-pd-row"{{end}}>
+          <td>{{.NutrientName}}</td>
+          <td>{{.Unit}}</td>
+          <td class="fc-num" data-nutrient-value="{{.NutrientName}}">{{fmtNutrient .PerHundredG}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+
+  {{template "foodcheck-disclaimer" .Disclaimer}}
+</main>
+
+<script>
+(function () {
+  var SHORT_LABEL = {
+    g: 'ก.', kg: 'กก.', oz: 'ออนซ์', ml: 'มล.', l: 'ล.',
+    tsp: 'ช้อนชา', tbsp: 'ช้อนโต๊ะ', cup: 'ถ้วยตวง'
+  };
+  var STEP = { g: 10, kg: 0.1, oz: 1, ml: 10, l: 0.1, tsp: 1, tbsp: 1, cup: 0.25 };
+
+  var source = '{{.Source}}';
+  var ref = '{{.Ref}}';
+
+  var amountInput = document.getElementById('fcAmountInput');
+  var minusBtn = document.getElementById('fcAmountMinus');
+  var plusBtn = document.getElementById('fcAmountPlus');
+  var unitSelect = document.getElementById('fcUnitSelect');
+  var metaAmount = document.getElementById('fcMetaAmount');
+  var tableAmountHead = document.getElementById('fcTableAmountHead');
+  var densityHint = document.getElementById('fcDensityHint');
+  var amountError = document.getElementById('fcAmountError');
+
+  function round(v, decimals) {
+    var f = Math.pow(10, decimals);
+    return Math.round(v * f) / f;
+  }
+
+  function gpuOf(optionEl) {
+    var raw = optionEl.getAttribute('data-gpu');
+    if (raw === null || raw === '-' || raw === '') return null;
+    var v = parseFloat(raw);
+    return isNaN(v) ? null : v;
+  }
+
+  function currentOption() {
+    return unitSelect.options[unitSelect.selectedIndex];
+  }
+
+  // Switching unit preserves the equivalent grams, same as the source
+  // system's onUnitChange (web/unit_conversion.py's UI mirror).
+  var lastUnitGpu = gpuOf(currentOption());
+  unitSelect.addEventListener('change', function () {
+    var newGpu = gpuOf(currentOption());
+    var amount = parseFloat(amountInput.value);
+    if (!isNaN(amount) && lastUnitGpu !== null && newGpu !== null) {
+      var grams = amount * lastUnitGpu;
+      amountInput.value = round(grams / newGpu, 4);
+    }
+    lastUnitGpu = newGpu;
+    fetchNutrition();
+  });
+
+  minusBtn.addEventListener('click', function () {
+    var step = STEP[unitSelect.value] || 1;
+    var next = Math.max(0.01, parseFloat(amountInput.value || '0') - step);
+    amountInput.value = round(next, 4);
+    fetchNutrition();
+  });
+  plusBtn.addEventListener('click', function () {
+    var step = STEP[unitSelect.value] || 1;
+    var next = parseFloat(amountInput.value || '0') + step;
+    amountInput.value = round(next, 4);
+    fetchNutrition();
+  });
+
+  var debounceTimer = null;
+  amountInput.addEventListener('input', function () {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(fetchNutrition, 300);
+  });
+
+  function showError(msg) {
+    amountError.textContent = msg;
+    amountError.classList.remove('fc-hidden');
+  }
+  function clearError() {
+    amountError.textContent = '';
+    amountError.classList.add('fc-hidden');
+  }
+
+  function updateDensityHint(data) {
+    if (!data.density_available) {
+      densityHint.textContent = 'อาหารนี้ไม่มีข้อมูลความหนาแน่น ใช้ได้เฉพาะหน่วยน้ำหนัก (g/kg/oz)';
+      densityHint.classList.remove('fc-hidden');
+    } else if (data.is_fallback) {
+      densityHint.textContent = '⚠ ค่าประมาณ — ' + (data.density_note || '');
+      densityHint.classList.remove('fc-hidden');
+    } else {
+      densityHint.classList.add('fc-hidden');
+    }
+  }
+
+  function updatePillElement(el, level, cssClass, text, detail, tooltip) {
+    el.className = 'pill' + (cssClass ? ' ' + cssClass : ' fc-hidden');
+    el.textContent = text + (detail ? ' · ' + detail : '');
+    if (tooltip) {
+      el.setAttribute('title', tooltip);
+    } else {
+      el.removeAttribute('title');
+    }
+  }
+
+  function formatValue(v) {
+    if (v === null || v === undefined || isNaN(v)) return '-';
+    var rounded = Math.abs(v) < 10 ? Math.round(v * 100) / 100 : Math.round(v * 10) / 10;
+    return String(rounded);
+  }
+
+  function applyResult(data) {
+    var amountLabel = amountInput.value + ' ' + (SHORT_LABEL[unitSelect.value] || unitSelect.value);
+    metaAmount.textContent = 'ค่าต่อ ' + amountLabel;
+    tableAmountHead.textContent = 'ค่าต่อ ' + amountLabel;
+    updateDensityHint(data);
+
+    (data.pd_nutrients || []).forEach(function (n) {
+      var valueEl = document.querySelector('[data-pd-value="' + n.nutrient_name + '"]');
+      if (valueEl) valueEl.textContent = formatValue(n.value) + ' ' + n.unit;
+      var pillEl = document.querySelector('[data-pd-pill="' + n.nutrient_name + '"]');
+      if (pillEl) updatePillElement(pillEl, n.badge_level, n.badge_css_class, n.badge_text, n.badge_detail, n.badge_tooltip);
+    });
+
+    (data.all_nutrients || []).forEach(function (n) {
+      var cell = document.querySelector('[data-nutrient-value="' + n.nutrient_name + '"]');
+      if (cell) cell.textContent = formatValue(n.value);
+    });
+  }
+
+  var activeRequest = 0;
+  function fetchNutrition() {
+    var amount = parseFloat(amountInput.value);
+    if (isNaN(amount) || amount <= 0) {
+      showError('กรุณากรอกจำนวนที่มากกว่า 0');
+      return;
+    }
+    clearError();
+
+    var requestId = ++activeRequest;
+    var url = '/food-check/food/' + encodeURIComponent(source) + '/' + encodeURIComponent(ref) +
+      '/nutrition?amount=' + encodeURIComponent(amount) + '&unit=' + encodeURIComponent(unitSelect.value);
+
+    fetch(url)
+      .then(function (res) {
+        if (requestId !== activeRequest) return null;
+        if (!res.ok) {
+          return res.json().then(function (body) {
+            throw new Error((body && body.error) || 'เกิดข้อผิดพลาด');
+          });
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (data && requestId === activeRequest) applyResult(data);
+      })
+      .catch(function (err) {
+        if (requestId === activeRequest) showError(err.message || 'เกิดข้อผิดพลาด');
+      });
+  }
+})();
+</script>
+</body>
+</html>

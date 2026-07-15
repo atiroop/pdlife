@@ -1,0 +1,26 @@
+{{define "foodcheck-extra-css"}}
+<style>
+.fc-attribution {
+  background: #FFF3E0; border-bottom: 2px solid var(--color-ink);
+  padding: 0.6rem 1.25rem; font-size: 0.82rem; text-align: center;
+}
+.fc-attribution .wrap { max-width: 1100px; margin: 0 auto; }
+
+.fc-disclaimer {
+  margin-top: 2rem; padding: 1rem 1.25rem; font-size: 0.8rem; opacity: 0.75;
+  border-top: 2px dashed rgba(21,21,22,0.25);
+}
+</style>
+{{end}}
+
+{{define "foodcheck-attribution"}}
+<div class="fc-attribution">
+  <div class="wrap">
+    ข้อมูลโภชนาการจาก <strong>Thai Food Composition Database (INMU มหิดล)</strong> และ <strong>กรมอนามัย</strong> — เพื่อการศึกษา ไม่ใช่เชิงพาณิชย์
+  </div>
+</div>
+{{end}}
+
+{{define "foodcheck-disclaimer"}}
+<div class="fc-disclaimer">⚠ {{.}}</div>
+{{end}}
