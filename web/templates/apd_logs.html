@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
 {{template "theme-css" .}}
-{{template "apd-shell-css" .}}
+{{template "app-shell-css" .}}
 <style>
 .logs-table-wrap { overflow-x: auto; }
 table.logs-table { width: 100%; min-width: 54rem; border-collapse: collapse; font-size: 0.85rem; }
@@ -47,12 +47,12 @@ table.logs-table tr:hover td:last-child { background: #FFF5F7; }
 </style>
 </head>
 <body>
-{{template "apd-header" (dict "Active" "logs" "User" .User)}}
+{{template "app-header" .}}
 
-<main class="apd-main">
-  <div class="apd-page-head">
+<main class="app-main">
+  <div class="app-page-head">
     <div>
-      <p class="apd-eyebrow">{{"// รายการย้อนหลัง"}}</p>
+      <p class="app-eyebrow">{{"// รายการย้อนหลัง"}}</p>
       <h1>รายการบันทึก APD</h1>
       <p class="count-note">{{len .Rows}} รายการ</p>
     </div>
@@ -69,7 +69,7 @@ table.logs-table tr:hover td:last-child { background: #FFF5F7; }
     <table class="logs-table">
       <thead>
         <tr>
-          <th>วันที่</th><th>เริ่ม</th><th>น้ำหนัก</th><th>ความดัน</th><th>ชีพจร</th>
+          <th>วันที่</th><th>รอบ</th><th>เริ่ม</th><th>น้ำหนัก</th><th>ความดัน</th><th>ชีพจร</th>
           <th>น้ำตาล</th><th>I-Drain</th><th>Total UF</th><th>ปัสสาวะ/วัน</th>
           <th>น้ำยาออก</th><th>จัดการ</th>
         </tr>
@@ -78,6 +78,7 @@ table.logs-table tr:hover td:last-child { background: #FFF5F7; }
         {{range .Rows}}
         <tr>
           <td class="mono-value">{{formatDate .EntryDate}}</td>
+          <td class="mono-value">{{.CycleNumber}}</td>
           <td>{{.TreatmentStartTime}}</td>
           <td class="mono-value">{{printf "%.2f" .WeightKG}} kg</td>
           <td class="mono-value">{{.BPSystolic}}/{{.BPDiastolic}}</td>
@@ -90,7 +91,7 @@ table.logs-table tr:hover td:last-child { background: #FFF5F7; }
           <td>
             <div class="row-actions">
               <a href="/apd/{{.ID}}/edit">แก้ไข</a>
-              <form method="post" action="/apd/{{.ID}}/delete" onsubmit="return confirm('ลบบันทึกวันที่ {{formatDate .EntryDate}}?');">
+              <form method="post" action="/apd/{{.ID}}/delete" onsubmit="return confirm('ลบบันทึกวันที่ {{formatDate .EntryDate}} รอบที่ {{.CycleNumber}}?');">
                 <button type="submit">ลบ</button>
               </form>
             </div>

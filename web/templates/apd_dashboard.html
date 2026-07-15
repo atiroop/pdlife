@@ -9,18 +9,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
 {{template "theme-css" .}}
-{{template "apd-shell-css" .}}
+{{template "app-shell-css" .}}
+{{template "kpi-cards-css" .}}
+{{template "kpi-disclaimer-css" .}}
 <style>
-.kpi-grid { display: grid; grid-template-columns: 1fr; gap: 1.1rem; margin-bottom: 1.75rem; }
-.kpi-card { padding: 1.2rem 1.3rem 1.1rem; }
-.kpi-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.6rem; }
-.kpi-title { font-weight: 700; font-size: 0.95rem; }
-.kpi-number { font-size: 1.9rem; }
-.kpi-unit { font-size: 1rem; font-weight: 400; margin-left: 0.25rem; }
-.kpi-meta { margin-top: 0.35rem; font-size: 0.85rem; opacity: 0.75; }
-@media (min-width: 720px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 980px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
-
 .section-title { font-size: 1.1rem; margin: 1.75rem 0 0.9rem; }
 .trend-grid { display: grid; grid-template-columns: 1fr; gap: 1.1rem; }
 @media (min-width: 860px) { .trend-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -38,7 +30,7 @@
 .rx-grid dd { font-weight: 700; }
 
 .toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.25rem; }
-.range-toggle, .export-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.range-toggle, .export-actions, .log-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .range-toggle a {
   font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.9rem; border-radius: 999px;
   border: 2px solid var(--color-ink); text-decoration: none; color: var(--color-ink);
@@ -50,18 +42,20 @@
   background: var(--color-surface);
 }
 .toolbar-btn:active { background: var(--color-paper); }
+.toolbar-btn-primary { background: var(--color-brand); color: #fff; }
+.toolbar-btn-primary:active { background: var(--color-brand); }
 
 .empty-state { padding: 2.5rem 1.5rem; text-align: center; }
 .empty-state p { margin-bottom: 0.8rem; opacity: 0.7; }
 </style>
 </head>
 <body>
-{{template "apd-header" (dict "Active" "dashboard" "User" .User)}}
+{{template "app-header" .}}
 
-<main class="apd-main">
-  <div class="apd-page-head">
+<main class="app-main">
+  <div class="app-page-head">
     <div>
-      <p class="apd-eyebrow">{{"// บันทึก APD ส่วนตัว"}}</p>
+      <p class="app-eyebrow">{{"// บันทึก APD ส่วนตัว"}}</p>
       <h1>สมุดบันทึก APD</h1>
     </div>
     <div class="toolbar-row">
@@ -70,6 +64,10 @@
         <a href="/apd?days=30" class="{{if eq .Days 30}}active{{end}}">30 วัน</a>
       </div>
       {{if .HasLatest}}
+      <div class="log-actions">
+        <a class="toolbar-btn toolbar-btn-primary" href="/apd/new">+ บันทึกใหม่</a>
+        <a class="toolbar-btn" href="/apd/logs">ดูบันทึกทั้งหมด</a>
+      </div>
       <div class="export-actions">
         <a class="toolbar-btn" href="/apd/export?format=xlsx&days={{.Days}}">Export Excel</a>
         <a class="toolbar-btn" href="/apd/export?format=pdf&days={{.Days}}">Export PDF</a>
@@ -84,18 +82,7 @@
     <a class="btn btn-primary" href="/apd/new" style="display:inline-block;width:auto;">+ บันทึกแรก</a>
   </div>
   {{else}}
-  <div class="kpi-grid">
-    {{range .Cards}}
-    <div class="card kpi-card status-{{.Status}}">
-      <div class="kpi-top">
-        <span class="kpi-title">{{.Title}}</span>
-        <span class="pill pill-{{.Status}}">{{.StatusLabel}}</span>
-      </div>
-      <div class="kpi-number mono-value">{{.Value}}<span class="kpi-unit">{{.Unit}}</span></div>
-      <div class="kpi-meta">{{.Meta}}</div>
-    </div>
-    {{end}}
-  </div>
+  {{template "kpi-cards-grid" .Cards}}
 
   <h2 class="section-title">แนวโน้ม ({{.Days}} วัน)</h2>
   <div class="trend-grid">
@@ -119,6 +106,7 @@
     </dl>
   </div>
   {{end}}
+  {{template "kpi-disclaimer" .Disclaimer}}
   {{end}}
 </main>
 

@@ -25,6 +25,7 @@ type exportColumn struct {
 
 var exportColumns = []exportColumn{
 	{"วันที่", 70},
+	{"รอบที่", 35},
 	{"เวลาเริ่ม", 50},
 	{"น้ำหนัก (kg)", 55},
 	{"ความดัน", 50},
@@ -54,6 +55,7 @@ func exportRowValues(l models.ApdLogEntry, prescriptionNames map[uint64]string) 
 	}
 	return []string{
 		formatEntryDate(l.EntryDate),
+		fmt.Sprintf("%d", l.CycleNumber),
 		l.TreatmentStartTime,
 		fmt.Sprintf("%.2f", l.WeightKG),
 		fmt.Sprintf("%d/%d", l.BPSystolic, l.BPDiastolic),
@@ -95,7 +97,7 @@ func (h *AuthHandler) ApdExport(c echo.Context) error {
 	start := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, -(days - 1))
 	var logs []models.ApdLogEntry
 	h.DB.Where("patient_profile_id = ? AND entry_date >= ?", profile.ID, start).
-		Order("entry_date ASC").Find(&logs)
+		Order("entry_date ASC, cycle_number ASC").Find(&logs)
 
 	prescriptionNames := map[uint64]string{}
 	var prescriptions []models.ApdPrescription

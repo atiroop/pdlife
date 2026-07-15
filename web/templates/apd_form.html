@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
 {{template "theme-css" .}}
-{{template "apd-shell-css" .}}
+{{template "app-shell-css" .}}
 <style>
 .form-panel { padding: 1.4rem 1.4rem 1.6rem; margin-bottom: 1.25rem; }
 .form-panel h2 { font-size: 1.1rem; margin-bottom: 0.9rem; }
@@ -36,12 +36,12 @@
 </style>
 </head>
 <body>
-{{template "apd-header" (dict "Active" "new" "User" .User)}}
+{{template "app-header" .}}
 
-<main class="apd-main">
-  <div class="apd-page-head">
+<main class="app-main">
+  <div class="app-page-head">
     <div>
-      <p class="apd-eyebrow">{{if .IsEditing}}{{"// แก้ไขบันทึก"}}{{else}}{{"// บันทึกใหม่"}}{{end}}</p>
+      <p class="app-eyebrow">{{if .IsEditing}}{{"// แก้ไขบันทึก"}}{{else}}{{"// บันทึกใหม่"}}{{end}}</p>
       <h1>{{if .IsEditing}}แก้ไขบันทึก APD{{else}}บันทึกข้อมูล APD รายวัน{{end}}</h1>
     </div>
   </div>
@@ -55,6 +55,18 @@
         <div class="field">
           <label>วันที่</label>
           <input type="date" name="date" required value="{{if .Log}}{{formatDateInput .Log.EntryDate}}{{else}}{{.Today}}{{end}}">
+        </div>
+        <div class="field">
+          <label>รอบที่</label>
+          <select name="cycleNumber" required>
+            {{$selected := 1}}{{if .Log}}{{$selected = .Log.CycleNumber}}{{end}}
+            <option value="1" {{if eq $selected 1}}selected{{end}}>รอบที่ 1</option>
+            <option value="2" {{if eq $selected 2}}selected{{end}}>รอบที่ 2</option>
+            <option value="3" {{if eq $selected 3}}selected{{end}}>รอบที่ 3</option>
+            <option value="4" {{if eq $selected 4}}selected{{end}}>รอบที่ 4</option>
+            <option value="5" {{if eq $selected 5}}selected{{end}}>รอบที่ 5</option>
+            <option value="6" {{if eq $selected 6}}selected{{end}}>รอบที่ 6</option>
+          </select>
         </div>
         <div class="field">
           <label>เวลาเริ่มทำ APD</label>

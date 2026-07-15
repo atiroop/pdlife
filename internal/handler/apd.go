@@ -38,6 +38,9 @@ func (h *AuthHandler) requireApdPatient(c echo.Context) (*models.User, *models.P
 	if err := h.DB.Where("user_id = ?", user.ID).First(&profile).Error; err != nil || profile.ProfileCompletedAt == nil {
 		return nil, nil, c.Redirect(http.StatusSeeOther, "/onboarding")
 	}
+	if profile.HealthDataConsentAt == nil {
+		return nil, nil, c.Redirect(http.StatusSeeOther, "/consent")
+	}
 	if profile.TreatmentType == nil || *profile.TreatmentType != models.TreatmentAPD {
 		return nil, nil, c.Render(http.StatusForbidden, "placeholder.html", map[string]string{
 			"Title":   "ใช้ได้เฉพาะผู้ป่วย APD",
@@ -67,64 +70,88 @@ func average(values []*float64) *float64 {
 
 func floatPtr(v float64) *float64 { return &v }
 
-// ---- GET /apd ----
+// apdDailyAgg is one day's rolled-up totals across all rounds logged that
+// day: Total UF (sum) and the "representative" weight/BP, taken from the
+// day's last round (highest cycle_number) — same model as capdDailyAgg.
+type apdDailyAgg struct {
+	Date       time.Time
+	UFTotal    int
+	LastWeight float64
+	LastBPSys  int
+	LastBPDia  int
+	CycleCount int
+}
 
-func (h *AuthHandler) ApdDashboard(c echo.Context) error {
-	user, profile, err := h.requireApdPatient(c)
-	if user == nil {
-		return err
-	}
-
-	days := 7
-	if c.QueryParam("days") == "30" {
-		days = 30
-	}
-
-	var latest models.ApdLogEntry
-	hasLatest := h.DB.Where("patient_profile_id = ?", profile.ID).
-		Order("entry_date DESC, id DESC").First(&latest).Error == nil
-
-	var latestPrescription *models.ApdPrescription
-	if hasLatest && latest.PrescriptionID != nil {
-		var p models.ApdPrescription
-		if h.DB.First(&p, *latest.PrescriptionID).Error == nil {
-			latestPrescription = &p
+// aggregateApdDaily groups round entries by entry_date. entries must be
+// sorted ascending by (entry_date, cycle_number) — the caller's query
+// order is what makes "last round of the day" resolve correctly here,
+// since each field is simply overwritten as later rounds are visited.
+func aggregateApdDaily(entries []models.ApdLogEntry) []apdDailyAgg {
+	dayIndex := map[string]int{}
+	var days []apdDailyAgg
+	for _, e := range entries {
+		key := e.EntryDate.Format("2006-01-02")
+		idx, ok := dayIndex[key]
+		if !ok {
+			days = append(days, apdDailyAgg{Date: e.EntryDate})
+			idx = len(days) - 1
+			dayIndex[key] = idx
 		}
+		days[idx].UFTotal += e.TotalUFML
+		days[idx].LastWeight = e.WeightKG
+		days[idx].LastBPSys = e.BPSystolic
+		days[idx].LastBPDia = e.BPDiastolic
+		days[idx].CycleCount++
 	}
-	if latestPrescription == nil {
-		var p models.ApdPrescription
-		if h.DB.Where("patient_profile_id = ? AND is_default_profile = 1", profile.ID).
-			Order("updated_at DESC").First(&p).Error == nil {
-			latestPrescription = &p
-		}
-	}
+	return days
+}
+
+// apdKPICards computes the same KPI cards shown at the top of /apd — the
+// single source of truth for these thresholds/labels, also used by the
+// /dashboard summary card so the two can never drift apart. Since patients
+// log several rounds per day, UF cards work on daily totals (sum of the
+// day's rounds) while weight/BP cards use the most recent round.
+func (h *AuthHandler) apdKPICards(profileID uint64) (cards []map[string]interface{}, hasLatest bool, latest models.ApdLogEntry) {
+	hasLatest = h.DB.Where("patient_profile_id = ?", profileID).
+		Order("entry_date DESC, cycle_number DESC, id DESC").First(&latest).Error == nil
 
 	today := time.Now().UTC().Truncate(24 * time.Hour)
 	last7Start := today.AddDate(0, 0, -6)
 
-	var last7Logs []models.ApdLogEntry
-	h.DB.Where("patient_profile_id = ? AND entry_date >= ?", profile.ID, last7Start).
-		Order("entry_date ASC").Find(&last7Logs)
+	var latestDayEntries []models.ApdLogEntry
+	latestDayUFTotal := 0
+	if hasLatest {
+		h.DB.Where("patient_profile_id = ? AND entry_date = ?", profileID, latest.EntryDate).Find(&latestDayEntries)
+		for _, e := range latestDayEntries {
+			latestDayUFTotal += e.TotalUFML
+		}
+	}
 
-	ufValues := make([]*float64, len(last7Logs))
-	for i, l := range last7Logs {
-		ufValues[i] = floatPtr(float64(l.TotalUFML))
+	var last7Logs []models.ApdLogEntry
+	h.DB.Where("patient_profile_id = ? AND entry_date >= ?", profileID, last7Start).
+		Order("entry_date ASC, cycle_number ASC").Find(&last7Logs)
+	last7Days := aggregateApdDaily(last7Logs)
+
+	ufValues := make([]*float64, len(last7Days))
+	for i, d := range last7Days {
+		ufValues[i] = floatPtr(float64(d.UFTotal))
 	}
 	avg7dayUF := average(ufValues)
 
-	// "เทียบเฉลี่ย 7 วันก่อนหน้า" — average of the 7 calendar days BEFORE
-	// the latest entry (excluding the latest entry itself).
+	// "เทียบเฉลี่ย 7 วันก่อนหน้า" — average of the daily last-round weights
+	// over the 7 calendar days BEFORE the latest entry's day.
 	var weightDeltaStatus kpi.Status = kpi.StatusGood
 	var weightDeltaKg *float64
 	if hasLatest {
 		prevWeekStart := latest.EntryDate.AddDate(0, 0, -7)
 		prevWeekEnd := latest.EntryDate.AddDate(0, 0, -1)
 		var prevWeekLogs []models.ApdLogEntry
-		h.DB.Where("patient_profile_id = ? AND entry_date BETWEEN ? AND ?", profile.ID, prevWeekStart, prevWeekEnd).
-			Find(&prevWeekLogs)
-		weightValues := make([]*float64, len(prevWeekLogs))
-		for i, l := range prevWeekLogs {
-			weightValues[i] = floatPtr(l.WeightKG)
+		h.DB.Where("patient_profile_id = ? AND entry_date BETWEEN ? AND ?", profileID, prevWeekStart, prevWeekEnd).
+			Order("entry_date ASC, cycle_number ASC").Find(&prevWeekLogs)
+		prevWeekDays := aggregateApdDaily(prevWeekLogs)
+		weightValues := make([]*float64, len(prevWeekDays))
+		for i, d := range prevWeekDays {
+			weightValues[i] = floatPtr(d.LastWeight)
 		}
 		if prevAvg := average(weightValues); prevAvg != nil {
 			delta := latest.WeightKG - *prevAvg
@@ -133,20 +160,16 @@ func (h *AuthHandler) ApdDashboard(c echo.Context) error {
 		}
 	}
 
-	days30Start := today.AddDate(0, 0, -(days - 1))
-	var chartLogs []models.ApdLogEntry
-	h.DB.Where("patient_profile_id = ? AND entry_date >= ?", profile.ID, days30Start).
-		Order("entry_date ASC").Find(&chartLogs)
-
-	cards := []map[string]interface{}{}
+	cards = []map[string]interface{}{}
 	if hasLatest {
+		ufStatus := kpi.TotalUF(float64(latestDayUFTotal))
 		cards = append(cards, map[string]interface{}{
-			"Title":       "Total UF ล่าสุด",
-			"Value":       fmt.Sprintf("%d", latest.TotalUFML),
+			"Title":       "Total UF ต่อวัน",
+			"Value":       fmt.Sprintf("%d", latestDayUFTotal),
 			"Unit":        "ml",
-			"Meta":        formatEntryDate(latest.EntryDate),
-			"Status":      kpi.TotalUF(float64(latest.TotalUFML)),
-			"StatusLabel": kpi.TotalUF(float64(latest.TotalUFML)).Label(),
+			"Meta":        fmt.Sprintf("%s (%d รอบ)", formatEntryDate(latest.EntryDate), len(latestDayEntries)),
+			"Status":      ufStatus,
+			"StatusLabel": ufStatus.Label(),
 		})
 		weightMeta := formatEntryDate(latest.EntryDate)
 		if weightDeltaKg != nil {
@@ -176,26 +199,65 @@ func (h *AuthHandler) ApdDashboard(c echo.Context) error {
 			"Title":       "ค่าเฉลี่ย Total UF 7 วัน",
 			"Value":       fmt.Sprintf("%.0f", *avg7dayUF),
 			"Unit":        "ml",
-			"Meta":        fmt.Sprintf("%d วันที่มีบันทึก", len(last7Logs)),
+			"Meta":        fmt.Sprintf("%d วันที่มีบันทึก", len(last7Days)),
 			"Status":      st,
 			"StatusLabel": st.Label(),
 		})
 	}
+	return cards, hasLatest, latest
+}
 
-	ufChart := buildTrendSVG(chartLogs, "Total UF", "ml", func(l models.ApdLogEntry) (float64, bool) {
-		return float64(l.TotalUFML), true
+// ---- GET /apd ----
+
+func (h *AuthHandler) ApdDashboard(c echo.Context) error {
+	user, profile, err := h.requireApdPatient(c)
+	if user == nil {
+		return err
+	}
+
+	days := 7
+	if c.QueryParam("days") == "30" {
+		days = 30
+	}
+
+	cards, hasLatest, latest := h.apdKPICards(profile.ID)
+
+	var latestPrescription *models.ApdPrescription
+	if hasLatest && latest.PrescriptionID != nil {
+		var p models.ApdPrescription
+		if h.DB.First(&p, *latest.PrescriptionID).Error == nil {
+			latestPrescription = &p
+		}
+	}
+	if latestPrescription == nil {
+		var p models.ApdPrescription
+		if h.DB.Where("patient_profile_id = ? AND is_default_profile = 1", profile.ID).
+			Order("updated_at DESC").First(&p).Error == nil {
+			latestPrescription = &p
+		}
+	}
+
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	days30Start := today.AddDate(0, 0, -(days - 1))
+	var chartLogs []models.ApdLogEntry
+	h.DB.Where("patient_profile_id = ? AND entry_date >= ?", profile.ID, days30Start).
+		Order("entry_date ASC, cycle_number ASC").Find(&chartLogs)
+	chartDays := aggregateApdDaily(chartLogs)
+
+	apdDay := func(d apdDailyAgg) time.Time { return d.Date }
+	ufChart := buildDailyTrendSVG(chartDays, "Total UF/วัน", "ml", apdDay, func(d apdDailyAgg) (float64, bool) {
+		return float64(d.UFTotal), true
 	}, nil)
-	weightChart := buildTrendSVG(chartLogs, "น้ำหนัก", "kg", func(l models.ApdLogEntry) (float64, bool) {
-		return l.WeightKG, true
+	weightChart := buildDailyTrendSVG(chartDays, "น้ำหนัก", "kg", apdDay, func(d apdDailyAgg) (float64, bool) {
+		return d.LastWeight, true
 	}, nil)
-	bpChart := buildTrendSVG(chartLogs, "ความดันโลหิต", "mmHg", func(l models.ApdLogEntry) (float64, bool) {
-		return float64(l.BPSystolic), true
-	}, func(l models.ApdLogEntry) (float64, bool) {
-		return float64(l.BPDiastolic), true
+	bpChart := buildDailyTrendSVG(chartDays, "ความดันโลหิต", "mmHg", apdDay, func(d apdDailyAgg) (float64, bool) {
+		return float64(d.LastBPSys), true
+	}, func(d apdDailyAgg) (float64, bool) {
+		return float64(d.LastBPDia), true
 	})
 
-	return c.Render(http.StatusOK, "apd_dashboard.html", map[string]interface{}{
-		"User":               user,
+	data := map[string]interface{}{
 		"Cards":              cards,
 		"HasLatest":          hasLatest,
 		"Latest":             latest,
@@ -204,7 +266,9 @@ func (h *AuthHandler) ApdDashboard(c echo.Context) error {
 		"UFChart":            ufChart,
 		"WeightChart":        weightChart,
 		"BPChart":            bpChart,
-	})
+		"Disclaimer":         kpi.Disclaimer,
+	}
+	return c.Render(http.StatusOK, "apd_dashboard.html", withNav(data, user, h.navInfoFromProfile(user, profile), "/apd"))
 }
 
 // ---- GET /apd/logs ----
@@ -217,12 +281,10 @@ func (h *AuthHandler) ApdLogsList(c echo.Context) error {
 
 	var logs []models.ApdLogEntry
 	h.DB.Where("patient_profile_id = ?", profile.ID).
-		Order("entry_date DESC, id DESC").Find(&logs)
+		Order("entry_date DESC, cycle_number DESC, id DESC").Find(&logs)
 
-	return c.Render(http.StatusOK, "apd_logs.html", map[string]interface{}{
-		"User": user,
-		"Rows": logs,
-	})
+	data := map[string]interface{}{"Rows": logs}
+	return c.Render(http.StatusOK, "apd_logs.html", withNav(data, user, h.navInfoFromProfile(user, profile), "/apd/logs"))
 }
 
 func formatEntryDate(t time.Time) string {

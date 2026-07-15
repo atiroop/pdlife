@@ -2,13 +2,17 @@ package models
 
 import "time"
 
-// ApdLogEntry is one day's APD (Automated Peritoneal Dialysis) log book
-// record. Field set mirrors the legacy source system exactly (see
-// docs/schema_spec.md) — one entry per patient per calendar day.
+// ApdLogEntry is one round's APD (Automated Peritoneal Dialysis) log book
+// record. Field set mirrors the legacy source system (see
+// docs/schema_spec.md) plus CycleNumber: patients log several exchange
+// rounds per day (รอบที่ 1-6), so uniqueness is per (patient, date, cycle)
+// — same model as CapdLogEntry. Daily KPI totals sum the day's rounds
+// (see handler.aggregateApdDaily).
 type ApdLogEntry struct {
 	ID                 uint64    `gorm:"column:id;primaryKey"`
 	PatientProfileID   uint64    `gorm:"column:patient_profile_id;not null"`
 	EntryDate          time.Time `gorm:"column:entry_date;type:date;not null"`
+	CycleNumber        int       `gorm:"column:cycle_number;not null;default:1"`
 	TreatmentStartTime string    `gorm:"column:treatment_start_time;not null"`
 	WeightKG           float64   `gorm:"column:weight_kg;type:decimal(5,2);not null"`
 	BPSystolic         int       `gorm:"column:bp_systolic;not null"`

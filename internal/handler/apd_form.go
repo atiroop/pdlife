@@ -95,6 +95,18 @@ func optionalInt(c echo.Context, key string) *int {
 	return &v
 }
 
+func optionalFloat(c echo.Context, key string) *float64 {
+	s := strings.TrimSpace(c.FormValue(key))
+	if s == "" {
+		return nil
+	}
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return nil
+	}
+	return &v
+}
+
 func requiredFloat(c echo.Context, key, label string) (float64, error) {
 	s, err := requiredString(c, key, label)
 	if err != nil {
@@ -216,6 +228,7 @@ func (h *AuthHandler) savePrescription(c echo.Context, patientProfileID uint64, 
 
 type logInput struct {
 	EntryDate          time.Time
+	CycleNumber        int
 	TreatmentStartTime string
 	WeightKG           float64
 	BPSystolic         int
@@ -241,6 +254,12 @@ func parseLogInput(c echo.Context) (*logInput, error) {
 
 	var l logInput
 	l.EntryDate = entryDate
+	if l.CycleNumber, err = requiredInt(c, "cycleNumber", "รอบที่"); err != nil {
+		return nil, err
+	}
+	if l.CycleNumber < 1 || l.CycleNumber > 6 {
+		return nil, &formValidationError{"รอบที่ต้องอยู่ระหว่าง 1-6"}
+	}
 	if l.TreatmentStartTime, err = requiredString(c, "treatmentStartTime", "เวลาเริ่มทำ APD"); err != nil {
 		return nil, err
 	}
@@ -305,9 +324,8 @@ func (h *AuthHandler) ApdNewForm(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	data["User"] = user
 	data["IsEditing"] = false
-	return c.Render(http.StatusOK, "apd_form.html", data)
+	return c.Render(http.StatusOK, "apd_form.html", withNav(data, user, h.navInfoFromProfile(user, profile), "/apd/new"))
 }
 
 // ---- POST /apd/new ----
@@ -333,9 +351,8 @@ func (h *AuthHandler) ApdCreate(c echo.Context) error {
 		if ferr != nil {
 			return ferr
 		}
-		data["User"] = user
 		data["IsEditing"] = false
-		return c.Render(http.StatusBadRequest, "apd_form.html", data)
+		return c.Render(http.StatusBadRequest, "apd_form.html", withNav(data, user, h.navInfoFromProfile(user, profile), "/apd/new"))
 	}
 
 	prescription, err := h.savePrescription(c, profile.ID, existingID)
@@ -359,6 +376,7 @@ func (h *AuthHandler) ApdCreate(c echo.Context) error {
 	entry := models.ApdLogEntry{
 		PatientProfileID:   profile.ID,
 		EntryDate:          logIn.EntryDate,
+		CycleNumber:        logIn.CycleNumber,
 		TreatmentStartTime: logIn.TreatmentStartTime,
 		WeightKG:           logIn.WeightKG,
 		BPSystolic:         logIn.BPSystolic,
@@ -374,7 +392,7 @@ func (h *AuthHandler) ApdCreate(c echo.Context) error {
 	}
 	if err := h.DB.Create(&entry).Error; err != nil {
 		if isDuplicateEntryError(err) {
-			return renderErr("มีบันทึกของวันที่นี้อยู่แล้ว")
+			return renderErr("มีบันทึกของรอบนี้ในวันเดียวกันอยู่แล้ว กรุณาเลือกรอบอื่น หรือแก้ไขบันทึกเดิมจากหน้ารายการบันทึก")
 		}
 		return err
 	}
@@ -403,9 +421,8 @@ func (h *AuthHandler) ApdEditForm(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	data["User"] = user
 	data["IsEditing"] = true
-	return c.Render(http.StatusOK, "apd_form.html", data)
+	return c.Render(http.StatusOK, "apd_form.html", withNav(data, user, h.navInfoFromProfile(user, profile), "/apd/logs"))
 }
 
 // ---- POST /apd/:id/edit ----
@@ -430,9 +447,8 @@ func (h *AuthHandler) ApdUpdate(c echo.Context) error {
 		if ferr != nil {
 			return ferr
 		}
-		data["User"] = user
 		data["IsEditing"] = true
-		return c.Render(http.StatusBadRequest, "apd_form.html", data)
+		return c.Render(http.StatusBadRequest, "apd_form.html", withNav(data, user, h.navInfoFromProfile(user, profile), "/apd/logs"))
 	}
 
 	// Legacy behaviour: editing always updates whichever prescription this
@@ -456,6 +472,7 @@ func (h *AuthHandler) ApdUpdate(c echo.Context) error {
 	}
 
 	existing.EntryDate = logIn.EntryDate
+	existing.CycleNumber = logIn.CycleNumber
 	existing.TreatmentStartTime = logIn.TreatmentStartTime
 	existing.WeightKG = logIn.WeightKG
 	existing.BPSystolic = logIn.BPSystolic
@@ -471,7 +488,7 @@ func (h *AuthHandler) ApdUpdate(c echo.Context) error {
 
 	if err := h.DB.Save(&existing).Error; err != nil {
 		if isDuplicateEntryError(err) {
-			return renderErr("มีบันทึกของวันที่นี้อยู่แล้ว")
+			return renderErr("มีบันทึกของรอบนี้ในวันเดียวกันอยู่แล้ว กรุณาเลือกรอบอื่น")
 		}
 		return err
 	}
