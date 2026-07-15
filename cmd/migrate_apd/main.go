@@ -56,7 +56,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("migrate_apd: %v", err)
+	}
 	dest, err := config.NewDB(cfg)
 	if err != nil {
 		log.Fatalf("destination (pdlife) DB connection failed: %v", err)

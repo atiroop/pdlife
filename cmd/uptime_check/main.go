@@ -46,7 +46,10 @@ type state struct {
 }
 
 func main() {
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("uptime_check: %v", err)
+	}
 	adminEmail := getEnvOr("ADMIN_ALERT_EMAIL", "admin@pdlife.app")
 
 	m, err := mailer.New(cfg)

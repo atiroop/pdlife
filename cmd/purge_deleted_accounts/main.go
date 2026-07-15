@@ -52,7 +52,10 @@ const (
 )
 
 func main() {
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("purge_deleted_accounts: %v", err)
+	}
 	db, err := config.NewDB(cfg)
 	if err != nil {
 		log.Fatalf("purge_deleted_accounts: db connection failed: %v", err)

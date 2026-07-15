@@ -129,7 +129,10 @@ func main() {
 
 	adminEmail := getEnvOr("ADMIN_ALERT_EMAIL", "admin@pdlife.app")
 
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("foodcheck_diffcheck: %v", err)
+	}
 	db, err := config.NewDB(cfg)
 	if err != nil {
 		log.Fatalf("database connection failed: %v", err)

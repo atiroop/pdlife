@@ -58,7 +58,10 @@ func main() {
 		log.Fatalf("source sqlite ping failed: %v", err)
 	}
 
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("migrate_foodcheck: %v", err)
+	}
 	dest, err := config.NewDB(cfg)
 	if err != nil {
 		log.Fatalf("destination (pdlife) DB connection failed: %v", err)

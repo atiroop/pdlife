@@ -34,7 +34,10 @@ func (r *templateRenderer) Render(w io.Writer, name string, data interface{}, c 
 }
 
 func main() {
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("startup aborted: %v", err)
+	}
 
 	db, err := config.NewDB(cfg)
 	if err != nil {

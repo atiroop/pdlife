@@ -211,7 +211,10 @@ func main() {
 	// config.Load() loads .env into the process environment (via
 	// godotenv) as a side effect — must happen before any os.Getenv call,
 	// including inside llmprovider.Require below.
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("news_ingest_nephrothai: %v", err)
+	}
 
 	primary, fallback := llmprovider.Require("news_ingest_nephrothai")
 	providers := llmprovider.List(primary, fallback)
