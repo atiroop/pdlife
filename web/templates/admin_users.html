@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>จัดการผู้ใช้งาน — pdlife.app Admin</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+<style>
+.users-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem 1.25rem; margin-bottom: 1.25rem; }
+.users-search { display: flex; gap: 0.5rem; flex: 1 1 18rem; max-width: 28rem; }
+.users-search input {
+  flex: 1; font-family: inherit; font-size: 0.95rem; padding: 0.55rem 0.9rem;
+  border: var(--border); border-radius: var(--radius); background: var(--color-paper); color: var(--color-ink);
+}
+.users-search button {
+  font-family: inherit; font-weight: 800; font-size: 0.9rem; border: var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 0.55rem 1.2rem;
+  cursor: pointer; background: var(--color-brand); color: #fff;
+}
+.users-search button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--color-ink); }
+.users-count-badge {
+  font-weight: 800; font-size: 0.9rem; background: var(--color-surface);
+  border: 2px solid var(--color-ink); border-radius: 999px; padding: 0.4rem 1rem;
+}
+
+.table-scroll { overflow-x: auto; border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--color-paper); }
+.users-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; min-width: 44rem; }
+.users-table th {
+  text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 0.75rem 0.9rem; background: var(--color-surface); border-bottom: 2px solid var(--color-ink);
+  white-space: nowrap;
+}
+.users-table td { padding: 0.7rem 0.9rem; border-bottom: 1px solid rgba(21,21,22,0.12); vertical-align: middle; }
+.users-table tbody tr { cursor: pointer; }
+.users-table tbody tr:hover { background: var(--color-surface); }
+.users-table tbody tr:last-child td { border-bottom: none; }
+.users-table a.row-link { color: inherit; text-decoration: none; display: block; }
+.u-email { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; }
+
+.status-pill {
+  display: inline-block; font-weight: 800; font-size: 0.72rem; padding: 0.2rem 0.7rem;
+  border-radius: 999px; border: 2px solid var(--color-ink); white-space: nowrap;
+}
+.status-verified { background: var(--color-good-tint); }
+.status-unverified { background: var(--color-watch-tint); }
+.status-suspended { background: var(--color-alert); color: #fff; border-color: var(--color-ink); }
+
+.users-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.5rem; }
+.users-pagination a, .users-pagination span.page-btn-disabled {
+  font-weight: 800; font-size: 0.9rem; padding: 0.5rem 1.2rem; border: var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); text-decoration: none;
+  background: var(--color-paper); color: var(--color-ink);
+}
+.users-pagination a:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--color-ink); }
+.users-pagination span.page-btn-disabled { opacity: 0.4; box-shadow: none; }
+.users-pagination .page-info { font-weight: 700; font-size: 0.9rem; }
+
+.empty-state { padding: 2.5rem 1.5rem; text-align: center; }
+.empty-state p { opacity: 0.7; }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <div class="app-page-head">
+    <div>
+      <p class="app-eyebrow">{{"// Admin"}}</p>
+      <h1>จัดการผู้ใช้งาน</h1>
+    </div>
+    <span class="users-count-badge">ทั้งหมด {{.Total}} บัญชี</span>
+  </div>
+
+  <div class="users-toolbar">
+    <form class="users-search" method="get" action="/admin/users">
+      <input type="text" name="q" value="{{.Query}}" placeholder="ค้นหาด้วยอีเมลหรือชื่อ..." aria-label="ค้นหาผู้ใช้">
+      <button type="submit">ค้นหา</button>
+    </form>
+    {{if .Query}}<a href="/admin/users" style="font-weight:700;color:var(--color-brand);">ล้างการค้นหา ✕</a>{{end}}
+  </div>
+
+  {{if .Rows}}
+  <div class="table-scroll">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>ชื่อ</th>
+          <th>อีเมล</th>
+          <th>การรักษา</th>
+          <th>สถานะ</th>
+          <th>วันที่สมัคร</th>
+          <th>Login ล่าสุด</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Rows}}
+        <tr onclick="window.location='/admin/users/{{.User.ID}}'">
+          <td><a class="row-link" href="/admin/users/{{.User.ID}}">{{.User.Nickname}}</a></td>
+          <td class="u-email">{{.User.Email}}</td>
+          <td>{{if .Treatment}}{{.Treatment}}{{else}}–{{end}}</td>
+          <td>
+            {{if eq .Status "suspended"}}<span class="status-pill status-suspended">ถูกระงับ</span>
+            {{else if eq .Status "unverified"}}<span class="status-pill status-unverified">ยังไม่ยืนยันอีเมล</span>
+            {{else}}<span class="status-pill status-verified">ยืนยันแล้ว</span>{{end}}
+          </td>
+          <td>{{formatDate .User.CreatedAt}}</td>
+          <td>{{if .User.LastLoginAt}}{{formatDate (deref .User.LastLoginAt)}}{{else}}–{{end}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="users-pagination">
+    {{if .HasPrev}}<a href="/admin/users?q={{.Query}}&page={{.PrevPage}}">← ก่อนหน้า</a>{{else}}<span class="page-btn-disabled">← ก่อนหน้า</span>{{end}}
+    <span class="page-info">หน้า {{.Page}} / {{.TotalPages}}</span>
+    {{if .HasNext}}<a href="/admin/users?q={{.Query}}&page={{.NextPage}}">ถัดไป →</a>{{else}}<span class="page-btn-disabled">ถัดไป →</span>{{end}}
+  </div>
+  {{else}}
+  <div class="card empty-state">
+    <p>{{if .Query}}ไม่พบผู้ใช้ที่ตรงกับ "{{.Query}}"{{else}}ยังไม่มีผู้ใช้ในระบบ{{end}}</p>
+  </div>
+  {{end}}
+</main>
+
+{{template "cookie-consent" .}}
+</body>
+</html>

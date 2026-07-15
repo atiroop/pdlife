@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>รายละเอียดผู้ใช้ — pdlife.app Admin</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+<style>
+.back-link { font-weight: 700; font-size: 0.88rem; color: var(--color-brand); text-decoration: none; }
+.back-link:hover { text-decoration: underline; }
+
+.flash { border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 0.85rem 1.2rem; font-weight: 700; margin-bottom: 1.25rem; }
+.flash-success { background: var(--color-good-tint); }
+.flash-error { background: var(--color-alert-tint); }
+
+.detail-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+@media (min-width: 860px) { .detail-grid { grid-template-columns: 3fr 2fr; align-items: start; } }
+
+.detail-card { padding: 1.4rem 1.5rem; }
+.detail-card h2 { font-size: 1.05rem; margin-bottom: 1rem; }
+.detail-rows { display: flex; flex-direction: column; gap: 0.65rem; }
+.detail-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.3rem 1rem; font-size: 0.93rem; border-bottom: 1px solid rgba(21,21,22,0.1); padding-bottom: 0.55rem; }
+.detail-row:last-child { border-bottom: none; padding-bottom: 0; }
+.detail-label { font-weight: 700; opacity: 0.65; font-size: 0.82rem; }
+.detail-value { font-weight: 600; text-align: right; }
+.detail-value.mono { font-family: 'JetBrains Mono', monospace; font-size: 0.84rem; }
+
+.status-pill {
+  display: inline-block; font-weight: 800; font-size: 0.72rem; padding: 0.2rem 0.7rem;
+  border-radius: 999px; border: 2px solid var(--color-ink); white-space: nowrap;
+}
+.status-verified { background: var(--color-good-tint); }
+.status-unverified { background: var(--color-watch-tint); }
+.status-suspended { background: var(--color-alert); color: #fff; }
+.bool-yes { color: #166534; font-weight: 800; }
+.bool-no { opacity: 0.55; font-weight: 700; }
+
+.suspend-banner {
+  background: var(--color-alert-tint); border: var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 1rem 1.2rem; margin-bottom: 1.25rem;
+}
+.suspend-banner strong { display: block; margin-bottom: 0.25rem; }
+
+.action-list { display: flex; flex-direction: column; gap: 0.7rem; }
+.action-btn {
+  font-family: inherit; font-weight: 800; font-size: 0.92rem; border: var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 0.65rem 1.3rem;
+  cursor: pointer; background: var(--color-surface); color: var(--color-ink); width: 100%;
+}
+.action-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--color-ink); }
+.action-btn-verify { background: var(--color-good); }
+.action-btn-unlock { background: #DBEAFE; }
+.action-btn-suspend { background: var(--color-alert); color: #fff; }
+.action-btn-unsuspend { background: var(--color-watch-tint); }
+.action-note { font-size: 0.8rem; opacity: 0.65; margin-top: -0.3rem; }
+
+.log-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.log-item { border: 2px solid rgba(21,21,22,0.15); border-radius: 8px; padding: 0.7rem 0.95rem; font-size: 0.88rem; background: var(--color-surface); }
+.log-item .log-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.3rem 1rem; margin-bottom: 0.2rem; }
+.log-item .log-action { font-weight: 800; }
+.log-item .log-when { font-size: 0.78rem; opacity: 0.6; font-weight: 700; }
+.log-item .log-admin { font-size: 0.8rem; opacity: 0.75; }
+.log-item .log-reason { margin-top: 0.35rem; font-size: 0.84rem; border-left: 3px solid var(--color-ink); padding-left: 0.6rem; }
+
+/* suspend confirm modal */
+.modal-backdrop {
+  display: none; position: fixed; inset: 0; background: rgba(21,21,22,0.55); z-index: 60;
+  align-items: center; justify-content: center; padding: 1rem;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: var(--color-paper); border: var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); max-width: 30rem; width: 100%; padding: 1.5rem 1.6rem;
+}
+.modal h3 { font-size: 1.1rem; margin-bottom: 0.6rem; }
+.modal p { font-size: 0.92rem; margin-bottom: 0.9rem; }
+.modal textarea {
+  width: 100%; min-height: 6rem; font-family: inherit; font-size: 0.95rem; padding: 0.7rem 0.9rem;
+  border: var(--border); border-radius: var(--radius); background: var(--color-surface);
+  color: var(--color-ink); resize: vertical; margin-bottom: 0.9rem;
+}
+.modal-actions { display: flex; gap: 0.7rem; flex-wrap: wrap; }
+.modal-actions .action-btn { width: auto; flex: 1; }
+.modal-cancel { background: var(--color-surface); }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <p style="margin-bottom:1rem;"><a class="back-link" href="/admin/users">← กลับไปหน้ารายชื่อผู้ใช้</a></p>
+
+  <div class="app-page-head">
+    <div>
+      <p class="app-eyebrow">{{"// Admin — จัดการผู้ใช้งาน"}}</p>
+      <h1>{{.Target.Nickname}}</h1>
+    </div>
+    {{if eq .Status "suspended"}}<span class="status-pill status-suspended">ถูกระงับ</span>
+    {{else if eq .Status "unverified"}}<span class="status-pill status-unverified">ยังไม่ยืนยันอีเมล</span>
+    {{else}}<span class="status-pill status-verified">ยืนยันแล้ว</span>{{end}}
+  </div>
+
+  {{if .Success}}
+  <div class="flash flash-success">
+    {{if eq .Success "verified"}}ยืนยันอีเมลแทนผู้ใช้เรียบร้อยแล้ว
+    {{else if eq .Success "unlocked"}}ปลดล็อกบัญชีเรียบร้อยแล้ว
+    {{else if eq .Success "suspended"}}ระงับบัญชีเรียบร้อยแล้ว — ผู้ใช้ถูกบังคับ logout ทุกอุปกรณ์
+    {{else if eq .Success "unsuspended"}}ยกเลิกการระงับเรียบร้อยแล้ว
+    {{else}}ดำเนินการเรียบร้อยแล้ว{{end}}
+  </div>
+  {{end}}
+  {{if .ErrorMsg}}<div class="flash flash-error">{{.ErrorMsg}}</div>{{end}}
+
+  {{if .Target.SuspendedAt}}
+  <div class="suspend-banner">
+    <strong>⛔ บัญชีนี้ถูกระงับตั้งแต่ {{formatDate (deref .Target.SuspendedAt)}}</strong>
+    {{if .Target.SuspendedReason}}เหตุผล: {{deref .Target.SuspendedReason}}{{end}}
+  </div>
+  {{end}}
+
+  <div class="detail-grid">
+    <div>
+      <div class="card detail-card">
+        <h2>ข้อมูลบัญชี</h2>
+        <div class="detail-rows">
+          <div class="detail-row"><span class="detail-label">ชื่อ</span><span class="detail-value">{{.Target.Nickname}}</span></div>
+          <div class="detail-row"><span class="detail-label">อีเมล</span><span class="detail-value mono">{{.Target.Email}}</span></div>
+          <div class="detail-row"><span class="detail-label">Role</span><span class="detail-value">{{.Target.Role}}</span></div>
+          <div class="detail-row"><span class="detail-label">การรักษา</span><span class="detail-value">{{if .Treatment}}{{.Treatment}}{{else}}–{{end}}</span></div>
+          <div class="detail-row"><span class="detail-label">สิทธิการรักษา</span><span class="detail-value">{{if .Coverage}}{{.Coverage}}{{else}}–{{end}}</span></div>
+          <div class="detail-row"><span class="detail-label">โรงพยาบาล</span><span class="detail-value">{{if .Hospital}}{{.Hospital}}{{else}}–{{end}}</span></div>
+          <div class="detail-row"><span class="detail-label">ยืนยันอีเมลเมื่อ</span><span class="detail-value">{{if .Target.EmailVerifiedAt}}{{formatDate (deref .Target.EmailVerifiedAt)}}{{else}}<span class="bool-no">ยังไม่ยืนยัน</span>{{end}}</span></div>
+          <div class="detail-row"><span class="detail-label">ยินยอมใช้ข้อมูลสุขภาพ</span><span class="detail-value">{{if .HasHealthConsent}}<span class="bool-yes">✓ มี</span>{{else}}<span class="bool-no">ไม่มี</span>{{end}}</span></div>
+          <div class="detail-row"><span class="detail-label">ยอมรับข้อตกลงการใช้งาน</span><span class="detail-value">{{if .Target.TermsAcceptedAt}}{{formatDate (deref .Target.TermsAcceptedAt)}}{{else}}<span class="bool-no">ไม่มีบันทึก</span>{{end}}</span></div>
+          <div class="detail-row"><span class="detail-label">วันที่สมัคร</span><span class="detail-value">{{formatDate .Target.CreatedAt}}</span></div>
+          <div class="detail-row"><span class="detail-label">Login ล่าสุด</span><span class="detail-value">{{if .Target.LastLoginAt}}{{formatDate (deref .Target.LastLoginAt)}}{{else}}–{{end}}</span></div>
+        </div>
+      </div>
+
+      <div class="card detail-card" style="margin-top:1.25rem;">
+        <h2>ประวัติการดำเนินการโดย Admin</h2>
+        {{if .ActionLogs}}
+        <div class="log-list">
+          {{range .ActionLogs}}
+          <div class="log-item">
+            <div class="log-head">
+              <span class="log-action">{{.Label}}</span>
+              <span class="log-when">{{.When}}</span>
+            </div>
+            <div class="log-admin">โดย {{.AdminName}}</div>
+            {{if .Log.Reason}}<div class="log-reason">{{deref .Log.Reason}}</div>{{end}}
+          </div>
+          {{end}}
+        </div>
+        {{else}}
+        <p style="opacity:0.6;font-size:0.9rem;">ยังไม่เคยมีการดำเนินการกับบัญชีนี้</p>
+        {{end}}
+      </div>
+    </div>
+
+    <div class="card detail-card">
+      <h2>การดำเนินการ</h2>
+      <div class="action-list">
+        {{if eq .Target.Role "Unverified"}}
+        <form method="post" action="/admin/users/{{.Target.ID}}/verify-email">
+          <button type="submit" class="action-btn action-btn-verify">✓ ยืนยันอีเมลแทน</button>
+        </form>
+        <p class="action-note">ใช้เมื่อผู้ใช้ไม่ได้รับอีเมลยืนยัน — ตั้งเป็นยืนยันแล้วทันที</p>
+        {{end}}
+
+        {{if .IsLocked}}
+        <form method="post" action="/admin/users/{{.Target.ID}}/unlock">
+          <button type="submit" class="action-btn action-btn-unlock">🔓 ปลดล็อกบัญชี</button>
+        </form>
+        <p class="action-note">บัญชีนี้ติดล็อกจากการใส่รหัสผ่านผิดหลายครั้ง — ปลดให้ลองใหม่ได้ทันที</p>
+        {{end}}
+
+        {{if .Target.SuspendedAt}}
+        <form method="post" action="/admin/users/{{.Target.ID}}/unsuspend">
+          <button type="submit" class="action-btn action-btn-unsuspend">↩ ยกเลิกการระงับ</button>
+        </form>
+        <p class="action-note">ผู้ใช้จะกลับมา login ได้ตามปกติ</p>
+        {{else}}
+        <button type="button" class="action-btn action-btn-suspend" id="open-suspend-modal">⛔ ระงับบัญชี</button>
+        <p class="action-note">ผู้ใช้จะ login ไม่ได้และถูกบังคับ logout ทุกอุปกรณ์ทันที — ต้องระบุเหตุผล</p>
+        {{end}}
+
+        {{if and (ne .Target.Role "Unverified") (not .IsLocked) (not .Target.SuspendedAt)}}
+        <p style="opacity:0.55;font-size:0.85rem;">บัญชีอยู่ในสถานะปกติ — มีเฉพาะ action ระงับบัญชีให้ใช้ได้</p>
+        {{end}}
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-backdrop" id="suspend-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="suspend-modal-title">
+    <h3 id="suspend-modal-title">ยืนยันการระงับบัญชี</h3>
+    <p>ผู้ใช้ <strong>{{.Target.Nickname}} ({{.Target.Email}})</strong> จะ login ไม่ได้และถูกบังคับ
+       logout ทุกอุปกรณ์ทันที จนกว่าจะยกเลิกการระงับ</p>
+    <form method="post" action="/admin/users/{{.Target.ID}}/suspend" id="suspend-form">
+      <label for="suspend-reason" style="font-weight:700;font-size:0.88rem;display:block;margin-bottom:0.4rem;">เหตุผลในการระงับ (บังคับ)</label>
+      <textarea id="suspend-reason" name="reason" required placeholder="เช่น ตรวจพบการใช้งานผิดปกติ / ผู้ใช้ร้องขอเอง ฯลฯ"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="action-btn modal-cancel" id="cancel-suspend">ยกเลิก</button>
+        <button type="submit" class="action-btn action-btn-suspend" id="confirm-suspend" disabled>ยืนยันระงับบัญชี</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var openBtn = document.getElementById('open-suspend-modal');
+  if (!openBtn) return;
+  var modal = document.getElementById('suspend-modal');
+  var cancelBtn = document.getElementById('cancel-suspend');
+  var reason = document.getElementById('suspend-reason');
+  var confirmBtn = document.getElementById('confirm-suspend');
+
+  openBtn.addEventListener('click', function () {
+    modal.classList.add('open');
+    reason.focus();
+  });
+  cancelBtn.addEventListener('click', function () {
+    modal.classList.remove('open');
+  });
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) modal.classList.remove('open');
+  });
+  // Confirm stays disabled until the reason has real content — the server
+  // re-checks this anyway (?error=reason_required), the button state is
+  // just the visible cue.
+  reason.addEventListener('input', function () {
+    confirmBtn.disabled = reason.value.trim() === '';
+  });
+})();
+</script>
+
+{{template "cookie-consent" .}}
+</body>
+</html>
