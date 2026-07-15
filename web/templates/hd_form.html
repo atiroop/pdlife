@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{if .IsEditing}}แก้ไขบันทึก{{else}}บันทึกใหม่{{end}} HD — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+<style>
+.form-panel { padding: 1.4rem 1.4rem 1.6rem; margin-bottom: 1.25rem; }
+.form-panel h2 { font-size: 1.1rem; margin-bottom: 0.9rem; }
+.field-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 640px) { .field-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 940px) { .field-grid { grid-template-columns: repeat(3, 1fr); } }
+.field label { display: block; font-weight: 800; font-size: 0.85rem; margin-bottom: 0.4rem; }
+.field input, .field select, .field textarea {
+  width: 100%; font-family: inherit; font-size: 0.92rem; font-weight: 600;
+  padding: 0.7rem 0.85rem; border-radius: 8px; border: 2px solid rgba(21,21,22,0.18);
+  background: #fff; color: var(--color-ink);
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--color-brand);
+}
+.field-hint { margin-top: 0.35rem; font-size: 0.78rem; opacity: 0.65; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: center; margin-top: 0.5rem; }
+.error-banner {
+  border: var(--border); border-radius: var(--radius); background: var(--color-alert-tint);
+  color: var(--color-alert); font-weight: 800; padding: 0.8rem 1rem; margin-bottom: 1.25rem;
+}
+.btn-danger { color: var(--color-alert); }
+
+.uf-preview {
+  border: 2px dashed rgba(21,21,22,0.25); border-radius: 8px; padding: 0.9rem 1rem;
+  margin-top: 1rem; font-weight: 800; font-size: 1rem; display: flex; align-items: center; gap: 0.6rem;
+}
+.uf-preview .uf-value { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; }
+.uf-preview.uf-negative { color: var(--color-alert); }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <div class="app-page-head">
+    <div>
+      <p class="app-eyebrow">{{if .IsEditing}}{{"// แก้ไขบันทึก"}}{{else}}{{"// บันทึกใหม่"}}{{end}}</p>
+      <h1>{{if .IsEditing}}แก้ไขบันทึก HD{{else}}บันทึกข้อมูล HD รายครั้ง{{end}}</h1>
+    </div>
+  </div>
+
+  {{if .Error}}<div class="error-banner">{{.Error}}</div>{{end}}
+
+  <form method="post" action="{{if .IsEditing}}/hd/{{.Log.ID}}/edit{{else}}/hd/new{{end}}" id="hdForm">
+    <section class="card form-panel">
+      <h2>วันที่และน้ำหนักแห้ง</h2>
+      <div class="field-grid">
+        <div class="field">
+          <label>วันที่ฟอกไต</label>
+          <input type="date" name="logDate" required value="{{if .Log}}{{formatDateInput .Log.LogDate}}{{else}}{{.Today}}{{end}}">
+        </div>
+        <div class="field">
+          <label>น้ำหนักแห้ง (kg)</label>
+          <input type="number" name="dryWeightKg" id="dryWeightKg" min="0" step="0.01" required value="{{if .Log}}{{printf "%.2f" .Log.DryWeightKG}}{{end}}">
+        </div>
+      </div>
+    </section>
+
+    <section class="card form-panel">
+      <h2>ก่อนฟอกไต</h2>
+      <div class="field-grid">
+        <div class="field">
+          <label>น้ำหนักก่อนฟอก (kg)</label>
+          <input type="number" name="preDialysisWeightKg" id="preDialysisWeightKg" min="0" step="0.01" required value="{{if .Log}}{{printf "%.2f" .Log.PreDialysisWeightKG}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ความดันตัวบน (Systolic)</label>
+          <input type="number" name="preDialysisBpSystolic" min="0" required value="{{if .Log}}{{.Log.PreDialysisBPSystolic}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ความดันตัวล่าง (Diastolic)</label>
+          <input type="number" name="preDialysisBpDiastolic" min="0" required value="{{if .Log}}{{.Log.PreDialysisBPDiastolic}}{{end}}">
+        </div>
+      </div>
+    </section>
+
+    <section class="card form-panel">
+      <h2>หลังฟอกไต</h2>
+      <div class="field-grid">
+        <div class="field">
+          <label>น้ำหนักหลังฟอก (kg)</label>
+          <input type="number" name="postDialysisWeightKg" id="postDialysisWeightKg" min="0" step="0.01" required value="{{if .Log}}{{printf "%.2f" .Log.PostDialysisWeightKG}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ความดันตัวบน (Systolic)</label>
+          <input type="number" name="postDialysisBpSystolic" min="0" required value="{{if .Log}}{{.Log.PostDialysisBPSystolic}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ความดันตัวล่าง (Diastolic)</label>
+          <input type="number" name="postDialysisBpDiastolic" min="0" required value="{{if .Log}}{{.Log.PostDialysisBPDiastolic}}{{end}}">
+        </div>
+      </div>
+      <div class="uf-preview" id="ufPreview">
+        UF ที่ดึงออกโดยประมาณ: <span class="uf-value" id="ufPreviewValue">—</span> ml
+      </div>
+      <p class="field-hint">ค่านี้เป็นปริมาณรวมทั้งครั้ง ไม่ใช่อัตราต่อชั่วโมง คำนวณจากน้ำหนักก่อน/หลังฟอก ระบบจะคำนวณจริงอีกครั้งตอนบันทึก</p>
+    </section>
+
+    <section class="card form-panel">
+      <h2>หมายเหตุ</h2>
+      <div class="field">
+        <label>หมายเหตุ (ถ้ามี)</label>
+        <textarea name="notes" rows="3">{{if and .Log .Log.Notes}}{{deref .Log.Notes}}{{end}}</textarea>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" style="width:auto;">{{if .IsEditing}}อัปเดตบันทึก{{else}}บันทึกข้อมูล{{end}}</button>
+      <a class="btn" href="{{if .IsEditing}}/hd/logs{{else}}/hd{{end}}" style="width:auto;">ยกเลิก</a>
+    </div>
+  </form>
+
+  {{if .IsEditing}}
+  <form method="post" action="/hd/{{.Log.ID}}/delete" onsubmit="return confirm('ลบบันทึกนี้?');" style="margin-top:0.75rem;">
+    <button type="submit" class="btn btn-danger" style="width:auto;display:inline-block;">ลบบันทึกนี้</button>
+  </form>
+  {{end}}
+</main>
+
+<script>
+(function () {
+  var preInput = document.getElementById('preDialysisWeightKg');
+  var postInput = document.getElementById('postDialysisWeightKg');
+  var preview = document.getElementById('ufPreview');
+  var previewValue = document.getElementById('ufPreviewValue');
+
+  function updatePreview() {
+    var pre = parseFloat(preInput.value);
+    var post = parseFloat(postInput.value);
+    if (isNaN(pre) || isNaN(post)) {
+      previewValue.textContent = '—';
+      preview.classList.remove('uf-negative');
+      return;
+    }
+    var uf = Math.round((pre - post) * 1000);
+    previewValue.textContent = (uf > 0 ? '+' : '') + uf;
+    preview.classList.toggle('uf-negative', uf <= 0);
+  }
+
+  preInput.addEventListener('input', updatePreview);
+  postInput.addEventListener('input', updatePreview);
+  updatePreview();
+})();
+</script>
+
+{{template "cookie-consent" .}}
+</body>
+</html>

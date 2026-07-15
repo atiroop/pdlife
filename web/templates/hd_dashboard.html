@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สมุดบันทึก HD — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+{{template "kpi-cards-css" .}}
+{{template "kpi-disclaimer-css" .}}
+<style>
+.section-title { font-size: 1.1rem; margin: 1.75rem 0 0.9rem; }
+.trend-grid { display: grid; grid-template-columns: 1fr; gap: 1.1rem; }
+@media (min-width: 860px) { .trend-grid { grid-template-columns: repeat(2, 1fr); } }
+.trend-card { padding: 1.1rem 1.2rem 1.3rem; }
+.trend-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.6rem; }
+.trend-unit { font-size: 0.8rem; opacity: 0.6; font-weight: 700; }
+.trend-svg-wrap { border: 2px solid rgba(21,21,22,0.12); border-radius: 8px; background: #FBF9FF; overflow: hidden; }
+.trend-svg { width: 100%; height: auto; display: block; }
+.trend-empty { height: 10rem; display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(21,21,22,0.2); border-radius: 8px; font-weight: 700; opacity: 0.6; font-size: 0.9rem; }
+
+.toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.25rem; }
+.range-toggle, .log-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.range-toggle a {
+  font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.9rem; border-radius: 999px;
+  border: 2px solid var(--color-ink); text-decoration: none; color: var(--color-ink);
+}
+.range-toggle a.active { background: var(--color-ink); color: #fff; }
+.toolbar-btn {
+  font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.9rem; border-radius: 999px;
+  border: 2px solid var(--color-ink); text-decoration: none; color: var(--color-ink);
+  background: var(--color-surface);
+}
+.toolbar-btn:active { background: var(--color-paper); }
+.toolbar-btn-primary { background: var(--color-brand); color: #fff; }
+.toolbar-btn-primary:active { background: var(--color-brand); }
+
+.empty-state { padding: 2.5rem 1.5rem; text-align: center; }
+.empty-state p { margin-bottom: 0.8rem; opacity: 0.7; }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <div class="app-page-head">
+    <div>
+      <p class="app-eyebrow">{{"// บันทึก HD ส่วนตัว"}}</p>
+      <h1>สมุดบันทึก HD</h1>
+    </div>
+    <div class="toolbar-row">
+      <div class="range-toggle">
+        <a href="/hd?days=7" class="{{if eq .Days 7}}active{{end}}">7 วัน</a>
+        <a href="/hd?days=30" class="{{if eq .Days 30}}active{{end}}">30 วัน</a>
+      </div>
+      {{if .HasLatest}}
+      <div class="log-actions">
+        <a class="toolbar-btn toolbar-btn-primary" href="/hd/new">+ บันทึกใหม่</a>
+        <a class="toolbar-btn" href="/hd/logs">ดูบันทึกทั้งหมด</a>
+      </div>
+      {{end}}
+    </div>
+  </div>
+
+  {{if not .HasLatest}}
+  <div class="card empty-state">
+    <p>ยังไม่มีบันทึก HD</p>
+    <a class="btn btn-primary" href="/hd/new" style="display:inline-block;width:auto;">+ บันทึกแรก</a>
+  </div>
+  {{else}}
+  {{template "kpi-cards-grid" .Cards}}
+
+  <h2 class="section-title">แนวโน้ม ({{.Days}} วัน)</h2>
+  <div class="trend-grid">
+    {{.WeightChart}}
+    {{.BPChart}}
+    {{.UFChart}}
+  </div>
+  {{template "kpi-disclaimer" .Disclaimer}}
+  {{end}}
+</main>
+
+{{template "cookie-consent" .}}
+</body>
+</html>
