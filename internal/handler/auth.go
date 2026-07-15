@@ -31,7 +31,8 @@ func NewAuthHandler(db *gorm.DB, cfg *config.Config, m *mailer.Mailer) *AuthHand
 
 func (h *AuthHandler) RegisterForm(c echo.Context) error {
 	return c.Render(http.StatusOK, "register.html", map[string]interface{}{
-		"Error": "",
+		"Error":        "",
+		"TermsVersion": LegalContentUpdatedDate,
 	})
 }
 
@@ -48,25 +49,53 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	password := c.FormValue("password")
 	nickname := strings.TrimSpace(c.FormValue("nickname"))
 
+	// termsVersion is only ever populated by the scroll-to-accept modal's
+	// JS after the user reaches the bottom of /terms — never trust the
+	// client alone (same principle as onboarding's health_data_consent
+	// checkbox). Empty means the modal was never completed; a mismatch
+	// means the browser had a stale /terms revision cached (e.g. the tab
+	// sat open across a terms update) — either way, reject and make the
+	// user accept the current revision.
+	termsVersion := strings.TrimSpace(c.FormValue("terms_version"))
+	if termsVersion == "" {
+		return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
+			"Error":        "กรุณายอมรับเงื่อนไขการใช้งานก่อนสมัคร",
+			"Email":        email,
+			"Nickname":     nickname,
+			"TermsVersion": LegalContentUpdatedDate,
+		})
+	}
+	if termsVersion != LegalContentUpdatedDate {
+		return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
+			"Error":        "เงื่อนไขการใช้งานมีการปรับปรุงใหม่ กรุณายอมรับเงื่อนไขฉบับล่าสุดอีกครั้ง",
+			"Email":        email,
+			"Nickname":     nickname,
+			"TermsVersion": LegalContentUpdatedDate,
+		})
+	}
+
 	if _, err := mail.ParseAddress(email); err != nil || !strings.Contains(email, "@") {
 		return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
-			"Error":    "รูปแบบอีเมลไม่ถูกต้อง",
-			"Email":    email,
-			"Nickname": nickname,
+			"Error":        "รูปแบบอีเมลไม่ถูกต้อง",
+			"Email":        email,
+			"Nickname":     nickname,
+			"TermsVersion": LegalContentUpdatedDate,
 		})
 	}
 	if nickname == "" {
 		return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
-			"Error":    "กรุณากรอกชื่อเล่น",
-			"Email":    email,
-			"Nickname": nickname,
+			"Error":        "กรุณากรอกชื่อเล่น",
+			"Email":        email,
+			"Nickname":     nickname,
+			"TermsVersion": LegalContentUpdatedDate,
 		})
 	}
 	if err := auth.ValidatePasswordStrength(password); err != nil {
 		return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
-			"Error":    err.Error(),
-			"Email":    email,
-			"Nickname": nickname,
+			"Error":        err.Error(),
+			"Email":        email,
+			"Nickname":     nickname,
+			"TermsVersion": LegalContentUpdatedDate,
 		})
 	}
 
@@ -74,14 +103,16 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	err := h.DB.Where("email = ?", email).First(&existing).Error
 	if err == nil {
 		return c.Render(http.StatusBadRequest, "register.html", map[string]interface{}{
-			"Error":    "อีเมลนี้ถูกใช้สมัครไว้แล้ว",
-			"Email":    email,
-			"Nickname": nickname,
+			"Error":        "อีเมลนี้ถูกใช้สมัครไว้แล้ว",
+			"Email":        email,
+			"Nickname":     nickname,
+			"TermsVersion": LegalContentUpdatedDate,
 		})
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Printf("register: lookup user failed: %v", err)
 		return c.Render(http.StatusInternalServerError, "register.html", map[string]interface{}{
-			"Error": "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+			"Error":        "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+			"TermsVersion": LegalContentUpdatedDate,
 		})
 	}
 
@@ -89,21 +120,26 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	if err != nil {
 		log.Printf("register: hash password failed: %v", err)
 		return c.Render(http.StatusInternalServerError, "register.html", map[string]interface{}{
-			"Error": "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+			"Error":        "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+			"TermsVersion": LegalContentUpdatedDate,
 		})
 	}
 
+	now := time.Now()
 	user := models.User{
-		Email:        email,
-		PasswordHash: passwordHash,
-		Nickname:     nickname,
-		Role:         models.RoleUnverified,
-		IsActive:     true,
+		Email:                email,
+		PasswordHash:         passwordHash,
+		Nickname:             nickname,
+		Role:                 models.RoleUnverified,
+		IsActive:             true,
+		TermsAcceptedAt:      &now,
+		TermsAcceptedVersion: &termsVersion,
 	}
 	if err := h.DB.Create(&user).Error; err != nil {
 		log.Printf("register: create user failed: %v", err)
 		return c.Render(http.StatusInternalServerError, "register.html", map[string]interface{}{
-			"Error": "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+			"Error":        "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+			"TermsVersion": LegalContentUpdatedDate,
 		})
 	}
 

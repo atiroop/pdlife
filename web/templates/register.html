@@ -27,6 +27,34 @@ input[type="email"], input[type="password"], input[type="text"] {
 .footer-link a { color: var(--color-ink); font-weight: 700; }
 /* honeypot: hidden from real users, present for bots to fill */
 .hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+.terms-row { display: flex; align-items: flex-start; gap: 0.6rem; margin: -0.2rem 0 1.25rem; }
+.terms-row input[type="checkbox"] { width: 1.3rem; height: 1.3rem; margin-top: 0.15rem; flex-shrink: 0; }
+.terms-row label { font-weight: 400; margin-bottom: 0; font-size: 0.95rem; line-height: 1.5; cursor: pointer; }
+.terms-row .terms-link-text { color: var(--color-brand); font-weight: 700; text-decoration: underline; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+#termsDialog { border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow); max-width: 34rem; width: calc(100vw - 2.5rem); padding: 0; }
+#termsDialog::backdrop { background: rgba(21,21,22,0.55); }
+.terms-dialog-head { padding: 1.1rem 1.4rem 0.9rem; border-bottom: 2px solid rgba(21,21,22,0.12); display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.terms-dialog-head h3 { font-size: 1.1rem; margin: 0; }
+.terms-dialog-close { font-family: inherit; font-size: 1.4rem; line-height: 1; background: none; border: none; cursor: pointer; color: var(--color-ink); padding: 0.2rem 0.5rem; }
+.terms-dialog-body { max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 1.1rem 1.4rem; }
+.terms-dialog-foot { padding: 0.9rem 1.4rem 1.1rem; border-top: 2px solid rgba(21,21,22,0.12); display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.terms-dialog-foot .btn { width: auto; }
+.terms-scroll-hint { font-size: 0.8rem; opacity: 0.6; }
+
+/* legal-content-terms is a shared template block (see _legal_content.html)
+   reused here so the Terms text is never duplicated — but its <style>
+   rules in legal_page.html don't carry over across templates, so the
+   equivalent rules are reproduced here, scoped to the modal body. */
+.terms-dialog-body h2 { font-size: 1.02rem; margin: 1.2rem 0 0.55rem; }
+.terms-dialog-body h2:first-child { margin-top: 0; }
+.terms-dialog-body p { margin-bottom: 0.85rem; line-height: 1.65; font-size: 0.9rem; }
+.terms-dialog-body ul, .terms-dialog-body ol { margin: 0 0 0.85rem 1.3rem; line-height: 1.65; font-size: 0.9rem; }
+.terms-dialog-body li { margin-bottom: 0.35rem; }
+.terms-dialog-body a { color: var(--color-brand); font-weight: 700; text-decoration: underline; }
+.terms-dialog-body strong { font-weight: 800; }
 </style>
 </head>
 <body>
@@ -55,12 +83,81 @@ input[type="email"], input[type="password"], input[type="text"] {
         <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
       </div>
 
-      <button type="submit" class="btn btn-primary">สมัครใช้งานฟรี</button>
+      <div class="terms-row">
+        <input type="checkbox" id="termsCheckbox" required>
+        <label for="termsCheckbox">ฉันยอมรับ<span class="terms-link-text">เงื่อนไขการใช้งาน</span></label>
+      </div>
+      <input type="hidden" name="terms_version" id="termsVersionField" value="">
+
+      <button type="submit" class="btn btn-primary" id="registerSubmitBtn" disabled>สมัครใช้งานฟรี</button>
     </form>
 
     <div class="footer-link">มีบัญชีอยู่แล้ว? <a href="/login">เข้าสู่ระบบ</a></div>
   </div>
 </main>
+
+<dialog id="termsDialog">
+  <div class="terms-dialog-head">
+    <h3>เงื่อนไขการใช้งาน</h3>
+    <button type="button" class="terms-dialog-close" id="termsDialogClose" aria-label="ปิด">×</button>
+  </div>
+  <div class="terms-dialog-body" id="termsDialogBody">
+    {{template "legal-content-terms" .}}
+  </div>
+  <div class="terms-dialog-foot">
+    <span class="terms-scroll-hint" id="termsScrollHint">เลื่อนอ่านให้ถึงด้านล่างเพื่อกดยอมรับ</span>
+    <button type="button" class="btn btn-primary" id="termsAcceptBtn" data-version="{{.TermsVersion}}" disabled>ยอมรับเงื่อนไข</button>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  var checkbox = document.getElementById('termsCheckbox');
+  var dialog = document.getElementById('termsDialog');
+  var body = document.getElementById('termsDialogBody');
+  var acceptBtn = document.getElementById('termsAcceptBtn');
+  var closeBtn = document.getElementById('termsDialogClose');
+  var versionField = document.getElementById('termsVersionField');
+  var submitBtn = document.getElementById('registerSubmitBtn');
+  var scrollHint = document.getElementById('termsScrollHint');
+
+  function checkScroll() {
+    var threshold = 10;
+    if (body.scrollTop + body.clientHeight >= body.scrollHeight - threshold) {
+      acceptBtn.disabled = false;
+      scrollHint.style.visibility = 'hidden';
+    }
+  }
+
+  function openModal() {
+    dialog.showModal();
+    body.scrollTop = 0;
+    acceptBtn.disabled = true;
+    scrollHint.style.visibility = 'visible';
+    checkScroll();
+  }
+
+  // Clicking the checkbox OR its label always opens the modal instead of
+  // toggling directly — a label click natively re-fires a click on its
+  // associated input, so intercepting here covers both.
+  checkbox.addEventListener('click', function (e) {
+    e.preventDefault();
+    openModal();
+  });
+
+  closeBtn.addEventListener('click', function () { dialog.close(); });
+  body.addEventListener('scroll', checkScroll);
+
+  acceptBtn.addEventListener('click', function () {
+    if (acceptBtn.disabled) return;
+    checkbox.checked = true;
+    versionField.value = acceptBtn.dataset.version;
+    submitBtn.disabled = false;
+    dialog.close();
+  });
+})();
+</script>
+
 {{template "site-footer" .}}
 {{template "cookie-consent" .}}
 </body>

@@ -75,6 +75,99 @@ func (m *Mailer) SendPasswordResetEmail(to string, data ResetPasswordData) error
 	return m.send(to, "รีเซ็ตรหัสผ่านของคุณ - pdlife.app", htmlBuf.String(), textBuf.String())
 }
 
+type AccountDeletionData struct {
+	Nickname     string
+	Email        string
+	PurgeDate    string // Thai-formatted date, ~90 days out — see handler.AccountDeletionGraceDays
+	SupportEmail string
+}
+
+func (m *Mailer) SendAccountDeletionEmail(to string, data AccountDeletionData) error {
+	var htmlBuf, textBuf bytes.Buffer
+	if err := m.htmlTmpl.ExecuteTemplate(&htmlBuf, "account_deletion.html", data); err != nil {
+		return fmt.Errorf("render account deletion html: %w", err)
+	}
+	if err := m.textTmpl.ExecuteTemplate(&textBuf, "account_deletion.txt", data); err != nil {
+		return fmt.Errorf("render account deletion text: %w", err)
+	}
+	return m.send(to, "คำขอลบบัญชีของคุณ - pdlife.app", htmlBuf.String(), textBuf.String())
+}
+
+// FoodCheckDiffAlertData is used by cmd/foodcheck_diffcheck — see that
+// tool's doc comment for the monthly drift-check this powers.
+type FoodCheckDiffAlertData struct {
+	SourceName        string
+	SourceURL         string
+	OldCount          int
+	NewCount          int
+	PreviousCheckedAt string
+	CheckedAt         string
+}
+
+func (m *Mailer) SendFoodCheckDiffAlert(to string, data FoodCheckDiffAlertData) error {
+	var htmlBuf, textBuf bytes.Buffer
+	if err := m.htmlTmpl.ExecuteTemplate(&htmlBuf, "foodcheck_diff_alert.html", data); err != nil {
+		return fmt.Errorf("render foodcheck diff alert html: %w", err)
+	}
+	if err := m.textTmpl.ExecuteTemplate(&textBuf, "foodcheck_diff_alert.txt", data); err != nil {
+		return fmt.Errorf("render foodcheck diff alert text: %w", err)
+	}
+	return m.send(to, "Food Check: พบความเปลี่ยนแปลงที่แหล่งข้อมูล "+data.SourceName+" - pdlife.app", htmlBuf.String(), textBuf.String())
+}
+
+// BackupFailureAlertData is used by cmd/db_backup on any failed step
+// (mysqldump, gzip, R2 upload, or retention pruning) — see that tool's doc
+// comment. A silently-failing backup is more dangerous than no backup at
+// all, since it looks safe while not being one.
+type BackupFailureAlertData struct {
+	Step    string // which step failed, e.g. "mysqldump", "gzip", "r2 upload"
+	Error   string
+	RanAt   string
+	LogHint string // where to find full logs on the VPS
+}
+
+func (m *Mailer) SendBackupFailureAlert(to string, data BackupFailureAlertData) error {
+	var htmlBuf, textBuf bytes.Buffer
+	if err := m.htmlTmpl.ExecuteTemplate(&htmlBuf, "backup_failure_alert.html", data); err != nil {
+		return fmt.Errorf("render backup failure alert html: %w", err)
+	}
+	if err := m.textTmpl.ExecuteTemplate(&textBuf, "backup_failure_alert.txt", data); err != nil {
+		return fmt.Errorf("render backup failure alert text: %w", err)
+	}
+	return m.send(to, "⚠ Database backup ล้มเหลว - pdlife.app", htmlBuf.String(), textBuf.String())
+}
+
+// UptimeAlertData is used by cmd/uptime_check for both the "down" and
+// "recovered" emails — the two share the same fields.
+type UptimeAlertData struct {
+	URL       string
+	Detail    string // status code or timeout/connection error
+	Since     string // when this state was first observed
+	CheckedAt string
+}
+
+func (m *Mailer) SendUptimeDownAlert(to string, data UptimeAlertData) error {
+	var htmlBuf, textBuf bytes.Buffer
+	if err := m.htmlTmpl.ExecuteTemplate(&htmlBuf, "uptime_down_alert.html", data); err != nil {
+		return fmt.Errorf("render uptime down alert html: %w", err)
+	}
+	if err := m.textTmpl.ExecuteTemplate(&textBuf, "uptime_down_alert.txt", data); err != nil {
+		return fmt.Errorf("render uptime down alert text: %w", err)
+	}
+	return m.send(to, "🔴 pdlife.app ล่ม (down)", htmlBuf.String(), textBuf.String())
+}
+
+func (m *Mailer) SendUptimeRecoveredAlert(to string, data UptimeAlertData) error {
+	var htmlBuf, textBuf bytes.Buffer
+	if err := m.htmlTmpl.ExecuteTemplate(&htmlBuf, "uptime_recovered_alert.html", data); err != nil {
+		return fmt.Errorf("render uptime recovered alert html: %w", err)
+	}
+	if err := m.textTmpl.ExecuteTemplate(&textBuf, "uptime_recovered_alert.txt", data); err != nil {
+		return fmt.Errorf("render uptime recovered alert text: %w", err)
+	}
+	return m.send(to, "✅ pdlife.app กลับมาทำงานปกติแล้ว", htmlBuf.String(), textBuf.String())
+}
+
 const boundary = "pdlife-boundary-7f3a9c"
 
 func (m *Mailer) send(to, subject, htmlBody, textBody string) error {

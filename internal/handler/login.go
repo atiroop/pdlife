@@ -61,6 +61,20 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return renderError("อีเมลหรือรหัสผ่านไม่ถูกต้อง")
 	}
 
+	// Password check happens before this so a stranger can't use the
+	// deletion-pending message to probe whether an email address has an
+	// account at all.
+	if user.AccountDeletionRequestedAt != nil {
+		return renderError("บัญชีนี้อยู่ระหว่างกระบวนการลบ กรุณาติดต่อทีมงานหากต้องการยกเลิก")
+	}
+
+	// Suspension check sits behind the password check for the same
+	// account-probing reason as deletion-pending above. Set/cleared only
+	// by an admin from /admin/users/:id (internal/handler/admin_users.go).
+	if user.SuspendedAt != nil {
+		return renderError("บัญชีถูกระงับชั่วคราว กรุณาติดต่อทีมงานที่ " + profileSupportEmail)
+	}
+
 	auth.LoginLimiter.Reset(email)
 
 	now := time.Now()

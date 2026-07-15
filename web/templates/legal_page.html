@@ -12,26 +12,35 @@
 <style>
 .legal-main { padding: 2rem 0 3rem; }
 .legal-content { max-width: 42rem; margin: 0 auto; }
-.draft-notice {
-  background: var(--color-alert-tint);
-  border: var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 1rem 1.25rem;
-  font-weight: 700;
-  margin-bottom: 1.75rem;
+.legal-content h1 { font-size: 1.7rem; margin-bottom: 0.4rem; }
+.legal-updated { opacity: 0.7; font-weight: 700; margin-bottom: 1.75rem; }
+.legal-content h2 { font-size: 1.2rem; margin: 1.75rem 0 0.75rem; }
+.legal-content h2:first-of-type { margin-top: 0; }
+.legal-content h3 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+.legal-content p { margin-bottom: 1rem; line-height: 1.75; }
+.legal-content ul, .legal-content ol { margin: 0 0 1rem 1.4rem; line-height: 1.75; }
+.legal-content li { margin-bottom: 0.4rem; }
+.legal-content a { color: var(--color-brand); font-weight: 700; text-decoration: underline; }
+.legal-content strong { font-weight: 800; }
+.table-wrap { overflow-x: auto; margin-bottom: 1rem; -webkit-overflow-scrolling: touch; }
+.legal-content table { border-collapse: collapse; width: 100%; min-width: 30rem; font-size: 0.92rem; }
+.legal-content th, .legal-content td {
+  border: 2px solid var(--color-ink); padding: 0.6rem 0.75rem; text-align: left; vertical-align: top;
 }
-.legal-content h1 { font-size: 1.7rem; margin-bottom: 1rem; }
-.legal-content p { margin-bottom: 1rem; }
+.legal-content th { background: var(--color-paper); font-weight: 700; }
+.legal-content .btn { display: inline-block; width: auto; }
 </style>
 </head>
 <body>
 {{template "site-header" .}}
 <main class="page-main legal-main">
   <div class="wrap legal-content">
-    <div class="draft-notice">ฉบับร่าง — อยู่ระหว่างตรวจสอบทางกฎหมาย</div>
     <h1>{{.Title}}</h1>
-    <p>{{.Placeholder}}</p>
+    <p class="legal-updated">ปรับปรุงล่าสุด: {{.UpdatedDate}}</p>
+    {{if eq .ContentBlock "legal-content-terms"}}{{template "legal-content-terms" .}}
+    {{else if eq .ContentBlock "legal-content-privacy"}}{{template "legal-content-privacy" .}}
+    {{else if eq .ContentBlock "legal-content-cookie"}}{{template "legal-content-cookie" .}}
+    {{end}}
   </div>
 </main>
 {{template "site-footer" .}}

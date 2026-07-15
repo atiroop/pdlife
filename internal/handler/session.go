@@ -143,18 +143,23 @@ func (h *AuthHandler) hasCompletedOnboarding(userID uint64) bool {
 	return err == nil && profile.ProfileCompletedAt != nil
 }
 
-// postLoginPath decides where a just-authenticated user lands: the log
-// book for their treatment type once onboarding is complete, otherwise
-// the onboarding wizard. Treatment types whose log book isn't built yet
-// (CAPD/HD) fall back to the landing page.
+// postLoginPath decides where a just-authenticated user lands: the
+// onboarding wizard if their profile isn't complete yet, the health-data
+// consent page if onboarding is done but consent hasn't been given (or
+// was withdrawn) yet, otherwise the dashboard (which itself shows the
+// right treatment-type card — see dashboard.go). Only ever called on a
+// session that already passed the role==Unverified check in the caller
+// (login.go's Login, or right after VerifyEmail/OnboardingSubmit mark the
+// user verified/complete), so it never needs a "not verified yet" branch
+// of its own.
 func (h *AuthHandler) postLoginPath(userID uint64) string {
 	var profile models.PatientProfile
 	err := h.DB.Where("user_id = ?", userID).First(&profile).Error
 	if err != nil || profile.ProfileCompletedAt == nil {
 		return "/onboarding"
 	}
-	if profile.TreatmentType != nil && *profile.TreatmentType == models.TreatmentAPD {
-		return "/apd"
+	if profile.HealthDataConsentAt == nil {
+		return "/consent"
 	}
-	return "/"
+	return "/dashboard"
 }
