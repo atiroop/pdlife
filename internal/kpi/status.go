@@ -1,7 +1,8 @@
 // Package kpi computes clinical status (good / watch / alert) for the
-// dashboard KPI cards from reference ranges. The thresholds below are
-// placeholders pending confirmation from the medical team — see
-// reference_ranges.go for the values and how to change them.
+// dashboard KPI cards from reference ranges. The thresholds have been
+// reviewed and approved by the PD Clinic medical team — see
+// docs/clinical_review.md and reference_ranges.go for the values and how
+// to change them.
 package kpi
 
 type Status string
@@ -31,6 +32,20 @@ func TotalUF(ml float64) Status {
 	r := Ranges.TotalUFML
 	switch {
 	case ml < r.AlertBelow:
+		return StatusAlert
+	case ml < r.WatchBelow, ml > r.WatchAbove:
+		return StatusWatch
+	default:
+		return StatusGood
+	}
+}
+
+// CapdDailyUF classifies a day's net CAPD ultrafiltration (sum of
+// uf_volume_ml across that day's cycles).
+func CapdDailyUF(ml float64) Status {
+	r := Ranges.CapdDailyUFML
+	switch {
+	case ml <= r.AlertAtOrBelow:
 		return StatusAlert
 	case ml < r.WatchBelow, ml > r.WatchAbove:
 		return StatusWatch
@@ -73,6 +88,55 @@ func classifyBP(v, normalMax, watchMax int) Status {
 	case v > watchMax:
 		return StatusAlert
 	case v >= normalMax:
+		return StatusWatch
+	default:
+		return StatusGood
+	}
+}
+
+// HDPostVsDry classifies post-dialysis weight against dry weight.
+// deltaKg is post-dialysis weight minus dry weight (can be negative).
+func HDPostVsDry(deltaKg float64) Status {
+	r := Ranges.HDPostVsDryKG
+	switch {
+	case deltaKg > r.WatchOverMaxKG:
+		return StatusAlert
+	case deltaKg > r.NormalAbsKG:
+		return StatusWatch
+	case deltaKg < -r.WatchUnderMaxKG:
+		return StatusAlert
+	case deltaKg < -r.NormalAbsKG:
+		return StatusWatch
+	default:
+		return StatusGood
+	}
+}
+
+// HDInterdialyticGain classifies weight gained since the previous HD
+// session (this session's pre-dialysis weight minus the previous
+// session's post-dialysis weight). Negative gain (weight loss) is
+// treated as good — the brief gives no lower-bound threshold.
+func HDInterdialyticGain(gainKg float64) Status {
+	r := Ranges.HDInterdialyticGainKG
+	switch {
+	case gainKg > r.WatchMaxKG:
+		return StatusAlert
+	case gainKg > r.NormalMaxKG:
+		return StatusWatch
+	default:
+		return StatusGood
+	}
+}
+
+// HDPostDialysisBP classifies post-dialysis systolic BP — the
+// HD-specific intradialytic-hypotension risk signal (distinct from the
+// shared pre-dialysis BloodPressure() thresholds).
+func HDPostDialysisBP(systolic int) Status {
+	r := Ranges.HDPostBPSystolic
+	switch {
+	case systolic < r.WatchMinSystolic:
+		return StatusAlert
+	case systolic < r.NormalMinSystolic:
 		return StatusWatch
 	default:
 		return StatusGood
