@@ -9,6 +9,11 @@
 # Usage: ./deploy.sh
 # Override the SSH target with DEPLOY_HOST (defaults to the "myserver"
 # entry in ~/.ssh/config).
+#
+# Rollback: the binary being replaced is kept as ${BIN_NAME}.prev on the
+# server, so undoing a bad deploy is
+#   ssh myserver 'cd /home/pdlife/web/pdlife.app/public_html && \
+#     mv pdlife.prev pdlife && systemctl restart pdlife'
 
 set -euo pipefail
 
@@ -21,6 +26,11 @@ cd "$(dirname "$0")"
 
 BUILD_PATH="$(mktemp -t pdlife-build.XXXXXX)"
 trap 'rm -f "$BUILD_PATH"' EXIT
+
+# Gate the deploy on the tests rather than trusting whatever was last run
+# by hand — this is a patient-facing app and deploys are one command.
+echo "==> Running tests"
+go test ./...
 
 echo "==> Building linux/amd64 binary"
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o "$BUILD_PATH" .
@@ -38,17 +48,39 @@ if [ "$LOCAL_SUM" != "$REMOTE_SUM" ]; then
 fi
 
 echo "==> Installing binary and restarting service"
+# cp -p (not mv) keeps the outgoing binary as .prev while leaving the
+# running one in place, so a failed restart can be rolled back to a file
+# that is known to have served traffic.
 ssh "$DEPLOY_HOST" "chmod +x ${REMOTE_DIR}/${BIN_NAME}.new && \
+  if [ -f ${REMOTE_DIR}/${BIN_NAME} ]; then \
+    cp -p ${REMOTE_DIR}/${BIN_NAME} ${REMOTE_DIR}/${BIN_NAME}.prev; \
+  fi && \
   mv ${REMOTE_DIR}/${BIN_NAME}.new ${REMOTE_DIR}/${BIN_NAME} && \
   chown pdlife:pdlife ${REMOTE_DIR}/${BIN_NAME} && \
   systemctl restart ${SERVICE_NAME} && \
   sleep 2 && \
   systemctl is-active ${SERVICE_NAME}"
 
+rollback() {
+  echo "!!! Smoke test failed — rolling back to the previous binary" >&2
+  ssh "$DEPLOY_HOST" "cd ${REMOTE_DIR} && \
+    if [ -f ${BIN_NAME}.prev ]; then \
+      mv ${BIN_NAME}.prev ${BIN_NAME} && systemctl restart ${SERVICE_NAME}; \
+    else \
+      echo 'no .prev binary to roll back to — service left as is' >&2; exit 1; \
+    fi"
+  echo "!!! Rolled back. The bad build was NOT kept; fix and re-deploy." >&2
+  exit 1
+}
+
 echo "==> Smoke test"
-curl -sf -o /dev/null -w '  / -> %{http_code}\n' https://pdlife.app/
-curl -sf -o /dev/null -w '  /healthz -> %{http_code}\n' https://pdlife.app/healthz
-curl -sf -o /dev/null -w '  /register -> %{http_code}\n' https://pdlife.app/register
-curl -sf -o /dev/null -w '  /login -> %{http_code}\n' https://pdlife.app/login
+for path in / /healthz /register /login; do
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "https://pdlife.app${path}")" || code="000"
+  echo "  ${path} -> ${code}"
+  case "$code" in
+    2*|3*) ;;
+    *) rollback ;;
+  esac
+done
 
 echo "==> Deploy complete"
