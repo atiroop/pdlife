@@ -1,18 +1,27 @@
 # Create the pdlife development database inside an existing local MariaDB
 # container and run every migration into it.
 #
-# Safe to re-run: the database and user are created IF NOT EXISTS and every
-# migration uses CREATE TABLE IF NOT EXISTS.
+# Safe to re-run: applied migrations are recorded in a _dev_migrations
+# table and skipped next time. That table is a convenience for this script
+# only — production tracks migrations by hand (see migrations/README.md),
+# and the ALTER TABLE migrations are not re-runnable without it.
 #
 # This only ever adds a database alongside whatever else the container
 # hosts — it never touches another project's data.
 #
 # Usage (from the repo root):
 #   ./scripts/setup-dev-db.ps1
-#   ./scripts/setup-dev-db.ps1 -Container some-other-container
+#   ./scripts/setup-dev-db.ps1 -Recreate            # drop and rebuild from scratch
+#   ./scripts/setup-dev-db.ps1 -Container other-container
 
 param(
-    [string]$Container = "nhe-mariadb-dev"
+    [string]$Container = "nhe-mariadb-dev",
+    # Drops pdlife's own database and rebuilds it. Only ever touches the
+    # database named by DB_NAME in .env — anything else in the container is
+    # left alone. Everything in it is throwaway (cmd/seed_dev recreates the
+    # test account), so this is the answer whenever migration state is
+    # unclear.
+    [switch]$Recreate
 )
 
 $ErrorActionPreference = "Stop"
@@ -73,6 +82,17 @@ if (-not $rootLine) {
 }
 $rootPw = $rootLine.Substring($rootLine.IndexOf("=") + 1)
 
+if ($Recreate) {
+    Write-Host "==> Dropping database '$dbName' (only this one)" -ForegroundColor Yellow
+    $dropSql = "DROP DATABASE IF EXISTS ``$dbName``;"
+    $tmpDrop = Join-Path ([System.IO.Path]::GetTempPath()) "pdlife-drop.sql"
+    [System.IO.File]::WriteAllText($tmpDrop, $dropSql, (New-Object System.Text.UTF8Encoding($false)))
+    docker cp $tmpDrop "${Container}:/tmp/pdlife-drop.sql" | Out-Null
+    Remove-Item $tmpDrop -Force
+    docker exec $Container mariadb -uroot "--password=$rootPw" -e "SOURCE /tmp/pdlife-drop.sql;"
+    if ($LASTEXITCODE -ne 0) { Fail "could not drop '$dbName'." }
+}
+
 Write-Host "==> Creating database '$dbName' and user '$dbUser' in $Container"
 
 # Backticks are doubled because ` is PowerShell's escape character inside a
@@ -84,6 +104,11 @@ CREATE USER IF NOT EXISTS '$dbUser'@'%' IDENTIFIED BY '$dbPass';
 ALTER USER '$dbUser'@'%' IDENTIFIED BY '$dbPass';
 GRANT ALL PRIVILEGES ON ``$dbName``.* TO '$dbUser'@'%';
 FLUSH PRIVILEGES;
+CREATE TABLE IF NOT EXISTS ``$dbName``.``_dev_migrations`` (
+  ``filename`` VARCHAR(255) NOT NULL,
+  ``applied_at`` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (``filename``)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 "@
 
 $tmpSetup = Join-Path ([System.IO.Path]::GetTempPath()) "pdlife-setup.sql"
@@ -101,15 +126,50 @@ if ($LASTEXITCODE -ne 0) { Fail "could not create the database or user." }
 # share a date the alphabetical tie-break already puts them right
 # (create before rename, create before fix).
 $migrations = Get-ChildItem "migrations/*.sql" | Sort-Object Name
-Write-Host "==> Running $($migrations.Count) migrations"
 
-foreach ($m in $migrations) {
+$appliedRaw = docker exec $Container mariadb -uroot "--password=$rootPw" -N -B $dbName -e "SELECT filename FROM ``_dev_migrations``;"
+$applied = @{}
+foreach ($f in ($appliedRaw -split "`n")) {
+    $f = $f.Trim()
+    if ($f) { $applied[$f] = $true }
+}
+
+$todo = $migrations | Where-Object { -not $applied.ContainsKey($_.Name) }
+
+# A database built before this script started tracking migrations has the
+# tables but an empty _dev_migrations, so every migration looks pending.
+# Replaying them would die on the first ALTER ("duplicate column"), which
+# is a confusing way to find out. There is no way to work out after the
+# fact which ones ran, and the data here is throwaway, so say so plainly.
+$alreadyBuilt = docker exec $Container mariadb -uroot "--password=$rootPw" -N -B -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$dbName' AND table_name = 'users';"
+if ($applied.Count -eq 0 -and $alreadyBuilt.Trim() -eq "1") {
+    Fail @"
+'$dbName' already has tables but no migration history — it predates this
+script's tracking.
+
+Rebuild it (the data in it is throwaway):
+    ./scripts/setup-dev-db.ps1 -Recreate
+    go run ./cmd/seed_dev
+"@
+}
+
+if ($todo.Count -eq 0) {
+    Write-Host "==> All $($migrations.Count) migrations already applied"
+} else {
+    Write-Host "==> Running $($todo.Count) new migration(s) ($($applied.Count) already applied)"
+}
+
+foreach ($m in $todo) {
     Write-Host "    $($m.Name)"
     # docker cp rather than a pipe: the migrations contain Thai text (ENUM
     # values), and piping through PowerShell would re-encode it.
     docker cp $m.FullName "${Container}:/tmp/pdlife-migration.sql" | Out-Null
     docker exec $Container mariadb -uroot "--password=$rootPw" --default-character-set=utf8mb4 $dbName -e "SOURCE /tmp/pdlife-migration.sql;"
     if ($LASTEXITCODE -ne 0) { Fail "migration failed: $($m.Name)" }
+
+    $escaped = $m.Name.Replace("'", "''")
+    docker exec $Container mariadb -uroot "--password=$rootPw" $dbName -e "INSERT INTO ``_dev_migrations`` (filename) VALUES ('$escaped');"
+    if ($LASTEXITCODE -ne 0) { Fail "could not record migration as applied: $($m.Name)" }
 }
 
 docker exec $Container rm -f /tmp/pdlife-setup.sql /tmp/pdlife-migration.sql | Out-Null

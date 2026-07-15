@@ -281,90 +281,120 @@ func main() {
 		},
 	})
 
+	// ---- public routes ----
+	//
+	// Everything not registered under one of the groups below is reachable
+	// without a session, so this list is the security boundary: adding a
+	// route here is a decision to make it public.
+
 	e.GET("/register", authHandler.RegisterForm)
 	e.POST("/register", authHandler.Register, registerLimiter)
 	e.GET("/verify-email", authHandler.VerifyEmail)
 	e.GET("/resend-verification", authHandler.ResendVerificationForm)
 	e.POST("/resend-verification", authHandler.ResendVerification, resendLimiter)
-	e.GET("/onboarding", authHandler.OnboardingForm)
-	e.POST("/onboarding", authHandler.OnboardingSubmit)
-	e.GET("/consent", authHandler.ConsentForm)
-	e.POST("/consent", authHandler.ConsentSubmit)
-	e.POST("/consent/withdraw", authHandler.WithdrawConsent)
 
 	e.GET("/login", authHandler.LoginForm)
 	e.POST("/login", authHandler.Login, loginLimiter)
+	// Logout stays public on purpose: it clears the cookies, and gating it
+	// on a valid session would leave someone whose session is already
+	// broken with no way to clear the bad ones.
 	e.POST("/logout", authHandler.Logout)
 	e.GET("/forgot-password", authHandler.ForgotPasswordForm)
 	e.POST("/forgot-password", authHandler.ForgotPassword, forgotPasswordLimiter)
 	e.GET("/reset-password", authHandler.ResetPasswordForm)
 	e.POST("/reset-password", authHandler.ResetPassword)
 
-	e.GET("/dashboard", authHandler.Dashboard)
-	e.GET("/news", authHandler.NewsList)
-	e.GET("/profile", authHandler.ProfileForm)
-	e.POST("/profile/name", authHandler.ProfileUpdateName)
-	e.POST("/profile/password", authHandler.ProfileChangePassword)
-	e.POST("/profile/treatment", authHandler.ProfileUpdateTreatment)
-	e.GET("/profile/export-data", authHandler.ProfileExportData)
-	e.POST("/profile/delete-account", authHandler.ProfileDeleteAccount)
+	// ---- routes that require a session ----
+	//
+	// RequireSession only checks that a session exists. Each handler's own
+	// guard still applies the rest (verified email, completed onboarding,
+	// health-data consent, matching treatment type) — this group is what
+	// makes forgetting to call that guard fail closed instead of silently
+	// exposing the route.
+	//
+	// Onboarding and consent live here too: they need a logged-in user but
+	// deliberately not a completed profile, which is what they exist to
+	// collect.
+	authed := e.Group("", authHandler.RequireSession)
 
-	e.GET("/apd", authHandler.ApdDashboard)
-	e.GET("/apd/logs", authHandler.ApdLogsList)
-	e.GET("/apd/new", authHandler.ApdNewForm)
-	e.POST("/apd/new", authHandler.ApdCreate)
-	e.GET("/apd/:id/edit", authHandler.ApdEditForm)
-	e.POST("/apd/:id/edit", authHandler.ApdUpdate)
-	e.POST("/apd/:id/delete", authHandler.ApdDelete)
-	e.GET("/apd/export", authHandler.ApdExport)
+	authed.GET("/onboarding", authHandler.OnboardingForm)
+	authed.POST("/onboarding", authHandler.OnboardingSubmit)
+	authed.GET("/consent", authHandler.ConsentForm)
+	authed.POST("/consent", authHandler.ConsentSubmit)
+	authed.POST("/consent/withdraw", authHandler.WithdrawConsent)
 
-	e.GET("/capd", authHandler.CapdDashboard)
-	e.GET("/capd/logs", authHandler.CapdLogsList)
-	e.GET("/capd/new", authHandler.CapdNewForm)
-	e.POST("/capd/new", authHandler.CapdCreate)
-	e.GET("/capd/:id/edit", authHandler.CapdEditForm)
-	e.POST("/capd/:id/edit", authHandler.CapdUpdate)
-	e.POST("/capd/:id/delete", authHandler.CapdDelete)
+	authed.GET("/dashboard", authHandler.Dashboard)
+	authed.GET("/news", authHandler.NewsList)
+	authed.GET("/profile", authHandler.ProfileForm)
+	authed.POST("/profile/name", authHandler.ProfileUpdateName)
+	authed.POST("/profile/password", authHandler.ProfileChangePassword)
+	authed.POST("/profile/treatment", authHandler.ProfileUpdateTreatment)
+	authed.GET("/profile/export-data", authHandler.ProfileExportData)
+	authed.POST("/profile/delete-account", authHandler.ProfileDeleteAccount)
 
-	e.GET("/hd", authHandler.HdDashboard)
-	e.GET("/hd/logs", authHandler.HdLogsList)
-	e.GET("/hd/new", authHandler.HdNewForm)
-	e.POST("/hd/new", authHandler.HdCreate)
-	e.GET("/hd/:id/edit", authHandler.HdEditForm)
-	e.POST("/hd/:id/edit", authHandler.HdUpdate)
-	e.POST("/hd/:id/delete", authHandler.HdDelete)
+	authed.GET("/apd", authHandler.ApdDashboard)
+	authed.GET("/apd/logs", authHandler.ApdLogsList)
+	authed.GET("/apd/new", authHandler.ApdNewForm)
+	authed.POST("/apd/new", authHandler.ApdCreate)
+	authed.GET("/apd/:id/edit", authHandler.ApdEditForm)
+	authed.POST("/apd/:id/edit", authHandler.ApdUpdate)
+	authed.POST("/apd/:id/delete", authHandler.ApdDelete)
+	authed.GET("/apd/export", authHandler.ApdExport)
 
-	e.GET("/lab-results", authHandler.LabResultsList)
-	e.GET("/lab-results/new", authHandler.LabResultsNewForm)
-	e.POST("/lab-results/new", authHandler.LabResultsCreate)
-	e.GET("/lab-results/:id/edit", authHandler.LabResultsEditForm)
-	e.POST("/lab-results/:id/edit", authHandler.LabResultsUpdate)
-	e.POST("/lab-results/:id/delete", authHandler.LabResultsDelete)
+	authed.GET("/capd", authHandler.CapdDashboard)
+	authed.GET("/capd/logs", authHandler.CapdLogsList)
+	authed.GET("/capd/new", authHandler.CapdNewForm)
+	authed.POST("/capd/new", authHandler.CapdCreate)
+	authed.GET("/capd/:id/edit", authHandler.CapdEditForm)
+	authed.POST("/capd/:id/edit", authHandler.CapdUpdate)
+	authed.POST("/capd/:id/delete", authHandler.CapdDelete)
 
-	e.GET("/food-check", authHandler.FoodCheckSearch)
-	e.GET("/food-check/results", authHandler.FoodCheckSearchResults)
-	e.GET("/food-check/food/:source/:ref", authHandler.FoodCheckDetail)
-	e.GET("/food-check/food/:source/:ref/nutrition", authHandler.FoodCheckNutrition)
+	authed.GET("/hd", authHandler.HdDashboard)
+	authed.GET("/hd/logs", authHandler.HdLogsList)
+	authed.GET("/hd/new", authHandler.HdNewForm)
+	authed.POST("/hd/new", authHandler.HdCreate)
+	authed.GET("/hd/:id/edit", authHandler.HdEditForm)
+	authed.POST("/hd/:id/edit", authHandler.HdUpdate)
+	authed.POST("/hd/:id/delete", authHandler.HdDelete)
 
-	e.GET("/admin/content-queue", authHandler.AdminContentQueue)
-	e.POST("/admin/content-queue/:id/approve", authHandler.AdminApproveContent)
-	e.POST("/admin/content-queue/:id/reject", authHandler.AdminRejectContent)
-	e.POST("/admin/content-queue/:id/regenerate-image", authHandler.AdminRegenerateImage)
+	authed.GET("/lab-results", authHandler.LabResultsList)
+	authed.GET("/lab-results/new", authHandler.LabResultsNewForm)
+	authed.POST("/lab-results/new", authHandler.LabResultsCreate)
+	authed.GET("/lab-results/:id/edit", authHandler.LabResultsEditForm)
+	authed.POST("/lab-results/:id/edit", authHandler.LabResultsUpdate)
+	authed.POST("/lab-results/:id/delete", authHandler.LabResultsDelete)
 
-	e.GET("/admin/editorial", authHandler.EditorialList)
-	e.GET("/admin/editorial/new", authHandler.EditorialNewForm)
-	e.POST("/admin/editorial/new", authHandler.EditorialCreate)
-	e.GET("/admin/editorial/:id/edit", authHandler.EditorialEditForm)
-	e.POST("/admin/editorial/:id/edit", authHandler.EditorialUpdate)
-	e.POST("/admin/editorial/:id/delete", authHandler.EditorialDelete)
-	e.POST("/admin/editorial/upload-media", authHandler.EditorialUploadMedia)
+	authed.GET("/food-check", authHandler.FoodCheckSearch)
+	authed.GET("/food-check/results", authHandler.FoodCheckSearchResults)
+	authed.GET("/food-check/food/:source/:ref", authHandler.FoodCheckDetail)
+	authed.GET("/food-check/food/:source/:ref/nutrition", authHandler.FoodCheckNutrition)
 
-	e.GET("/admin/users", authHandler.AdminUsersList)
-	e.GET("/admin/users/:id", authHandler.AdminUserDetail)
-	e.POST("/admin/users/:id/verify-email", authHandler.AdminVerifyEmail)
-	e.POST("/admin/users/:id/unlock", authHandler.AdminUnlockAccount)
-	e.POST("/admin/users/:id/suspend", authHandler.AdminSuspendAccount)
-	e.POST("/admin/users/:id/unsuspend", authHandler.AdminUnsuspendAccount)
+	// ---- admin-only routes ----
+	//
+	// These act on other people's accounts and on what patients get shown,
+	// so the role check belongs on the group rather than on each handler's
+	// memory.
+	adminOnly := e.Group("", authHandler.RequireAdminRole)
+
+	adminOnly.GET("/admin/content-queue", authHandler.AdminContentQueue)
+	adminOnly.POST("/admin/content-queue/:id/approve", authHandler.AdminApproveContent)
+	adminOnly.POST("/admin/content-queue/:id/reject", authHandler.AdminRejectContent)
+	adminOnly.POST("/admin/content-queue/:id/regenerate-image", authHandler.AdminRegenerateImage)
+
+	adminOnly.GET("/admin/editorial", authHandler.EditorialList)
+	adminOnly.GET("/admin/editorial/new", authHandler.EditorialNewForm)
+	adminOnly.POST("/admin/editorial/new", authHandler.EditorialCreate)
+	adminOnly.GET("/admin/editorial/:id/edit", authHandler.EditorialEditForm)
+	adminOnly.POST("/admin/editorial/:id/edit", authHandler.EditorialUpdate)
+	adminOnly.POST("/admin/editorial/:id/delete", authHandler.EditorialDelete)
+	adminOnly.POST("/admin/editorial/upload-media", authHandler.EditorialUploadMedia)
+
+	adminOnly.GET("/admin/users", authHandler.AdminUsersList)
+	adminOnly.GET("/admin/users/:id", authHandler.AdminUserDetail)
+	adminOnly.POST("/admin/users/:id/verify-email", authHandler.AdminVerifyEmail)
+	adminOnly.POST("/admin/users/:id/unlock", authHandler.AdminUnlockAccount)
+	adminOnly.POST("/admin/users/:id/suspend", authHandler.AdminSuspendAccount)
+	adminOnly.POST("/admin/users/:id/unsuspend", authHandler.AdminUnsuspendAccount)
 
 	e.GET("/articles", authHandler.ArticlesList)
 	e.GET("/articles/:slug", authHandler.ArticleDetail)
