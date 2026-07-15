@@ -1,6 +1,9 @@
 # Environment
 .env
 
+# Claude Code local overrides (per-machine, not shared)
+.claude/settings.local.json
+
 # Build output
 /bin
 /pdlife

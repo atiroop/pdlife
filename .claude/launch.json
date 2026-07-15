@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pdlife",
+      "runtimeExecutable": "go",
+      "runtimeArgs": ["run", "."],
+      "port": 18086,
+      "env": {
+        "APP_ADDR": "127.0.0.1:18086"
+      }
+    }
+  ]
+}
