@@ -1,0 +1,10 @@
+{{define "uptime_recovered_alert.txt"}}pdlife.app — ✅ กลับมาทำงานปกติแล้ว
+
+cmd/uptime_check ตรวจพบว่า {{.URL}} กลับมาตอบสนองปกติแล้ว
+
+รายละเอียด: {{.Detail}}
+ล่มตั้งแต่: {{.Since}}
+กลับมาปกติเมื่อ: {{.CheckedAt}}
+
+pdlife.app
+{{end}}

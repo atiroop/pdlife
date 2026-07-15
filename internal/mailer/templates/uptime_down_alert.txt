@@ -1,0 +1,11 @@
+{{define "uptime_down_alert.txt"}}pdlife.app — 🔴 เว็บล่ม (down)
+
+cmd/uptime_check ตรวจพบว่า {{.URL}} ไม่ตอบสนองปกติ
+ระบบจะไม่ส่งอีเมลซ้ำจนกว่าจะกลับมาทำงานปกติ
+
+รายละเอียด: {{.Detail}}
+พบครั้งแรกเมื่อ: {{.Since}}
+ตรวจล่าสุด: {{.CheckedAt}}
+
+pdlife.app
+{{end}}

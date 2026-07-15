@@ -1,0 +1,13 @@
+{{define "backup_failure_alert.txt"}}pdlife.app — Database backup รายวันล้มเหลว
+
+cmd/db_backup รันไม่สำเร็จ — อาจไม่มี backup ของวันนี้เก็บไว้ทั้ง local และ R2
+กรุณาตรวจสอบและรันซ้ำด้วยตัวเองโดยเร็วที่สุด
+
+ขั้นตอนที่ล้มเหลว: {{.Step}}
+ข้อผิดพลาด: {{.Error}}
+เวลาที่รัน: {{.RanAt}}
+
+ดู log เต็มได้ที่ {{.LogHint}} บน VPS
+
+pdlife.app
+{{end}}
