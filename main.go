@@ -54,6 +54,32 @@ func main() {
 	e.HideBanner = true
 	e.Use(echomw.Logger())
 	e.Use(echomw.Recover())
+
+	// Security headers have to be set here rather than in nginx: the nginx
+	// config on the server is managed separately and is off-limits to this
+	// repo.
+	//
+	// No ContentSecurityPolicy on purpose. The templates rely on inline
+	// <script>/<style>, so a policy strict enough to be worth having would
+	// break the dashboards, and the deploy smoke test only fetches pages —
+	// it would not notice. Adding CSP needs the inline blocks hashed or
+	// nonced first, and a real browser pass over each module.
+	e.Use(echomw.SecureWithConfig(echomw.SecureConfig{
+		ContentTypeNosniff: "nosniff",
+		XFrameOptions:      "SAMEORIGIN",
+		// X-XSS-Protection is a legacy filter that modern browsers ignore
+		// and older ones can be made to misbehave with; "0" disables it,
+		// which is the current recommendation over Echo's "1; mode=block".
+		XSSProtection: "0",
+		// Patient URLs like /apd/123/edit are health data. Send the origin
+		// only when leaving pdlife.app, never the path.
+		ReferrerPolicy: "strict-origin-when-cross-origin",
+		// One year. Not preloaded, and subdomains excluded: cdn.pdlife.app
+		// is the only other host and it is not ours to commit to HTTPS-only
+		// on the browser's behalf.
+		HSTSMaxAge:            31536000,
+		HSTSExcludeSubdomains: true,
+	}))
 	funcs := template.FuncMap{
 		"logoURL":     func() string { return cfg.LogoURL },
 		"logoURLDark": func() string { return cfg.LogoURLDark },
