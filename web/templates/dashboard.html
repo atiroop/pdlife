@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ภาพรวม — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+{{template "kpi-cards-css" .}}
+{{template "peritonitis-banner-css" .}}
+{{template "lab-abnormal-css" .}}
+{{template "kpi-disclaimer-css" .}}
+<style>
+.dash-section { margin-bottom: 2.25rem; }
+.dash-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.9rem; }
+.dash-section-head h2 { font-size: 1.1rem; }
+.dash-section-head a { font-weight: 700; font-size: 0.85rem; color: var(--color-brand); text-decoration: none; white-space: nowrap; }
+.dash-section-head a:hover { text-decoration: underline; }
+
+.admin-card { background: var(--color-watch-tint); border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.1rem 1.3rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.8rem; margin-bottom: 2.25rem; }
+.admin-card-label { font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.65; margin-bottom: 0.2rem; }
+.admin-card-count { font-family: 'Anuphan', sans-serif; font-weight: 800; font-size: 1.3rem; }
+
+.news-grid { display: grid; grid-template-columns: 1fr; gap: 0.9rem; }
+@media (min-width: 700px) { .news-grid { grid-template-columns: repeat(2, 1fr); } }
+.news-card { padding: 1rem 1.15rem; }
+.news-card-badge { display: inline-block; font-weight: 800; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.2rem 0.6rem; border-radius: 999px; border: 2px solid var(--color-ink); margin-bottom: 0.5rem; }
+.news-card-badge-nephrothai { background: #DCFCE7; }
+.news-card-badge-pubmed { background: #DBEAFE; }
+.news-card-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.4rem; }
+.news-card-date { font-size: 0.78rem; opacity: 0.6; font-weight: 700; }
+
+.treatment-card { padding: 1.4rem 1.5rem; }
+
+.treatment-cards-footer { margin-top: 0.5rem; }
+
+.quick-link-card { padding: 1.1rem 1.3rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; text-decoration: none; color: var(--color-ink); }
+.quick-link-card:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--color-ink); }
+.quick-link-title { font-weight: 800; font-size: 1.05rem; }
+.quick-link-arrow { font-size: 1.3rem; font-weight: 800; color: var(--color-brand); }
+
+.editorial-empty { padding: 2rem 1.5rem; text-align: center; }
+.editorial-empty p { opacity: 0.65; margin-bottom: 0; }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <div class="app-page-head">
+    <div>
+      <p class="app-eyebrow">{{"// ภาพรวมของฉัน"}}</p>
+      <h1>สวัสดี{{if .User}}, {{.User.Nickname}}{{end}}</h1>
+    </div>
+  </div>
+
+  {{if .IsAdmin}}
+  <div class="admin-card">
+    <div>
+      <div class="admin-card-label">Admin</div>
+      <div class="admin-card-count">รอตรวจสอบ {{.AdminPendingCount}} รายการ</div>
+    </div>
+    <a class="btn btn-primary" href="/admin/content-queue" style="display:inline-block;width:auto;">ไปที่ Content Queue</a>
+  </div>
+  <div class="admin-card">
+    <div>
+      <div class="admin-card-label">Admin</div>
+      <div class="admin-card-count">ฉบับร่าง {{.AdminEditorialDraftCount}} บทความ</div>
+    </div>
+    <a class="btn btn-primary" href="/admin/editorial" style="display:inline-block;width:auto;">ไปที่ Editorial Articles</a>
+  </div>
+  <div class="admin-card">
+    <div>
+      <div class="admin-card-label">Admin</div>
+      <div class="admin-card-count">ผู้ใช้ทั้งหมด {{.AdminUserCount}} บัญชี</div>
+    </div>
+    <a class="btn btn-primary" href="/admin/users" style="display:inline-block;width:auto;">จัดการผู้ใช้งาน</a>
+  </div>
+  {{end}}
+
+  {{if .NewsItems}}
+  <section class="dash-section">
+    <div class="dash-section-head">
+      <h2>ข่าวสารและงานวิจัย</h2>
+      <a href="/news">ดูทั้งหมด →</a>
+    </div>
+    <div class="news-grid">
+      {{range .NewsItems}}
+      <div class="card news-card">
+        <span class="news-card-badge news-card-badge-{{.Source}}">{{.Source}}</span>
+        <div class="news-card-title">{{.TitleTH}}</div>
+        <div class="news-card-date">{{if .PublishedAt}}{{formatDate (deref .PublishedAt)}}{{else}}ไม่ทราบวันที่{{end}}</div>
+      </div>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
+  {{if .NeedsConsent}}
+  <section class="dash-section">
+    <h2 style="margin-bottom:0.9rem;">สมุดบันทึกของฉัน</h2>
+    <div class="card treatment-card">
+      <p style="margin-bottom:1rem;">ต้องยืนยันความยินยอมให้ใช้ข้อมูลสุขภาพก่อนจึงจะดูสมุดบันทึกได้</p>
+      <a class="btn btn-primary" href="/consent" style="display:inline-block;width:auto;">ยืนยันความยินยอม →</a>
+    </div>
+  </section>
+  {{end}}
+
+  {{if .TreatmentCard}}
+  <section class="dash-section">
+    <h2 style="margin-bottom:0.9rem;">สมุดบันทึกของฉัน</h2>
+
+    {{if not .TreatmentCard.HasData}}
+    <div class="card treatment-card">
+      <p style="margin-bottom:1rem;">ยังไม่มีบันทึก {{.TreatmentCard.Type}}</p>
+      <a class="btn btn-primary" href="{{if eq .TreatmentCard.Type "APD"}}/apd/new{{else if eq .TreatmentCard.Type "CAPD"}}/capd/new{{else}}/hd/new{{end}}" style="display:inline-block;width:auto;">+ บันทึกแรก</a>
+    </div>
+
+    {{else}}
+    {{if eq .TreatmentCard.Type "CAPD"}}
+    {{template "peritonitis-banner" (dict "Show" .TreatmentCard.PeritonitisAlert "Meta" .TreatmentCard.PeritonitisMeta)}}
+    {{end}}
+    {{template "kpi-cards-grid" .TreatmentCard.Cards}}
+    <div class="treatment-cards-footer">
+      <a class="btn btn-primary" href="{{if eq .TreatmentCard.Type "APD"}}/apd{{else if eq .TreatmentCard.Type "CAPD"}}/capd{{else}}/hd{{end}}" style="display:inline-block;width:auto;">ดูสมุดบันทึกเต็ม →</a>
+    </div>
+    {{template "kpi-disclaimer" .KpiDisclaimer}}
+    {{end}}
+  </section>
+  {{end}}
+
+  {{if not .NeedsConsent}}
+  {{if .LabHasData}}
+  <section class="dash-section">
+    <div class="dash-section-head">
+      <h2>ผลตรวจเลือด</h2>
+      <a href="/lab-results">ดูทั้งหมด →</a>
+    </div>
+    {{template "lab-abnormal-card" (dict "AbnormalItems" .LabAbnormalItems "Disclaimer" .LabDisclaimer)}}
+  </section>
+  {{else}}
+  <section class="dash-section">
+    <a class="card quick-link-card" href="/lab-results/new">
+      <span class="quick-link-title">🩸 ผลตรวจเลือด — บันทึกผลตรวจครั้งแรก</span>
+      <span class="quick-link-arrow">→</span>
+    </a>
+  </section>
+  {{end}}
+  {{end}}
+
+  <section class="dash-section">
+    <a class="card quick-link-card" href="/food-check">
+      <span class="quick-link-title">🍽 Food Check — ค้นหาโภชนาการอาหาร</span>
+      <span class="quick-link-arrow">→</span>
+    </a>
+  </section>
+
+  <section class="dash-section">
+    <div class="dash-section-head">
+      <h2>บทความจากทีมงาน PDLife</h2>
+      {{if .EditorialItems}}<a href="/articles">ดูทั้งหมด →</a>{{end}}
+    </div>
+    {{if .EditorialItems}}
+    <div class="news-grid">
+      {{range .EditorialItems}}
+      <a class="card news-card" href="/articles/{{.Slug}}" style="text-decoration:none;color:inherit;display:block;">
+        <div class="news-card-title">{{.Title}}</div>
+        <div class="news-card-date">{{if .PublishedAt}}{{formatDate (deref .PublishedAt)}}{{else}}ไม่ทราบวันที่{{end}}</div>
+      </a>
+      {{end}}
+    </div>
+    {{else}}
+    <div class="card editorial-empty">
+      <p>เร็วๆ นี้</p>
+    </div>
+    {{end}}
+  </section>
+</main>
+
+{{template "cookie-consent" .}}
+</body>
+</html>

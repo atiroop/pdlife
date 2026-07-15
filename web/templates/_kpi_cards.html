@@ -1,0 +1,66 @@
+{{/* Shared KPI-card grid + peritonitis banner — used by /apd, /capd, and
+     /dashboard so the three never drift apart on status colors or
+     thresholds. The Go-side card data (Title/Value/Unit/Meta/Status/
+     StatusLabel) comes from apdKPICards/capdKPICards in
+     internal/handler/apd.go / capd.go — the single source of truth for
+     those thresholds. */}}
+
+{{define "kpi-cards-css"}}
+<style>
+.kpi-grid { display: grid; grid-template-columns: 1fr; gap: 1.1rem; margin-bottom: 1.75rem; }
+.kpi-card { padding: 1.2rem 1.3rem 1.1rem; }
+.kpi-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.6rem; }
+.kpi-title { font-weight: 700; font-size: 0.95rem; }
+.kpi-number { font-size: 1.9rem; }
+.kpi-unit { font-size: 1rem; font-weight: 400; margin-left: 0.25rem; }
+.kpi-meta { margin-top: 0.35rem; font-size: 0.85rem; opacity: 0.75; }
+@media (min-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 980px) { .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); } }
+</style>
+{{end}}
+
+{{define "kpi-cards-grid"}}
+<div class="kpi-grid">
+  {{range .}}
+  <div class="card kpi-card status-{{.Status}}">
+    <div class="kpi-top">
+      <span class="kpi-title">{{.Title}}</span>
+      <span class="pill pill-{{.Status}}">{{.StatusLabel}}</span>
+    </div>
+    <div class="kpi-number mono-value">{{.Value}}<span class="kpi-unit">{{.Unit}}</span></div>
+    <div class="kpi-meta">{{.Meta}}</div>
+  </div>
+  {{end}}
+</div>
+{{end}}
+
+{{define "peritonitis-banner-css"}}
+<style>
+.peritonitis-banner {
+  width: 100%; box-sizing: border-box;
+  background: var(--color-alert); color: #fff; font-weight: 800;
+  padding: 1rem 1.25rem; margin-bottom: 1.5rem; border-radius: var(--radius);
+  border: var(--border); font-size: 1.05rem; line-height: 1.5;
+}
+.peritonitis-banner .meta { display: block; font-weight: 700; font-size: 0.85rem; opacity: 0.9; margin-top: 0.3rem; }
+</style>
+{{end}}
+
+{{define "peritonitis-banner"}}
+{{if .Show}}
+<div class="peritonitis-banner" role="alert">
+  ⚠ ลักษณะน้ำยาผิดปกติ (บันทึกล่าสุด {{.Meta}}) — อาจเป็นสัญญาณเยื่อบุช่องท้องอักเสบ
+  <span class="meta">กรุณาติดต่อแพทย์หรือพยาบาลผู้ดูแลทันที</span>
+</div>
+{{end}}
+{{end}}
+
+{{define "kpi-disclaimer-css"}}
+<style>
+.kpi-disclaimer { margin-top: 1rem; padding: 0.9rem 1rem; font-size: 0.8rem; opacity: 0.75; border-top: 2px dashed rgba(21,21,22,0.25); }
+</style>
+{{end}}
+
+{{define "kpi-disclaimer"}}
+<p class="kpi-disclaimer">⚠ {{.}}</p>
+{{end}}

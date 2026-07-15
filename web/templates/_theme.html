@@ -96,9 +96,15 @@ h1, h2, h3, .kpi-number {
   border-radius: 999px;
   background: var(--color-surface);
 }
-.pill-good  { background: var(--color-good); color: #151516; font-weight: 800; }
-.pill-watch { background: #FFD60A; color: #151516; font-weight: 800; }
-.pill-alert { background: var(--color-alert); color: #FFFFFF; font-weight: 800; }
+.pill-good    { background: var(--color-good); color: #151516; font-weight: 800; }
+.pill-watch   { background: #FFD60A; color: #151516; font-weight: 800; }
+.pill-alert   { background: var(--color-alert); color: #FFFFFF; font-weight: 800; }
+/* Food Check risk-indicator pills — pill-good/watch/alert above cover the
+   traffic-light nutrients; these two cover the non-traffic-light cases
+   (see internal/foodrisk): an informational fact (high moisture) and
+   missing/invalid data, which must never look "safe" (green/good). */
+.pill-info    { background: #1D4ED8; color: #FFFFFF; font-weight: 800; }
+.pill-unknown { background: #E2E2E2; color: #151516; font-weight: 800; border-color: #9C9C9C; }
 
 .kpi-card.status-good  { background: var(--color-good-tint); }
 .kpi-card.status-watch { background: var(--color-watch-tint); }
@@ -119,7 +125,7 @@ header .wrap { display: flex; align-items: center; justify-content: space-betwee
   padding-bottom: 4px;
   border-bottom: 3px solid var(--color-brand);
 }
-.brand-logo { max-height: 40px; width: auto; display: block; }
+.brand-logo { max-height: 52px; width: auto; display: block; }
 .brand-text-fallback {
   display: none;
   font-family: 'Anuphan', sans-serif;

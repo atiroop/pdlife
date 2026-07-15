@@ -1,0 +1,135 @@
+{{define "app-shell-css"}}
+<style>
+.app-header {
+  background: var(--color-ink);
+  border-bottom: var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+.app-header .wrap {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem;
+  padding: 0.8rem 1.25rem; max-width: 1100px; margin: 0 auto;
+}
+.app-brand { display: inline-flex; align-items: center; text-decoration: none; flex: 0 0 auto; }
+.app-brand-logo { max-height: 40px; width: auto; display: block; }
+.app-brand-text { color: #fff; font-family: 'Anuphan', sans-serif; font-weight: 800; font-size: 1.05rem; }
+
+.app-nav-toggle {
+  display: inline-flex; margin-left: auto; background: transparent; border: 2px solid rgba(255,255,255,0.5);
+  border-radius: 8px; padding: 0.45rem 0.6rem; cursor: pointer;
+}
+@media (min-width: 860px) { .app-nav-toggle { display: none; } }
+
+.app-nav {
+  display: flex; flex-direction: column; gap: 0.15rem;
+  order: 4; flex: 1 1 100%;
+  max-height: 0; overflow: hidden; transition: max-height 0.2s ease;
+}
+.app-nav.open { max-height: 20rem; margin-top: 0.4rem; }
+.app-nav a, .app-nav .app-nav-disabled {
+  color: #fff; text-decoration: none; font-weight: 700; font-size: 0.92rem;
+  padding: 0.65rem 0.6rem; border-radius: 8px; border: 2px solid transparent;
+}
+.app-nav a.active { border-color: #fff; }
+.app-nav a:hover { border-color: rgba(255,255,255,0.5); }
+.app-nav .app-nav-disabled { opacity: 0.45; cursor: default; }
+
+.app-user { position: relative; margin-left: auto; flex: 0 0 auto; }
+@media (min-width: 860px) {
+  .app-header .wrap { flex-wrap: nowrap; }
+  .app-nav {
+    flex-direction: row; order: 0; flex: 1 1 auto; max-height: none; overflow: visible;
+    margin-left: 1.5rem; gap: 0.3rem;
+  }
+  .app-nav.open { margin-top: 0; }
+  .app-user { margin-left: 1rem; }
+}
+
+.app-user-btn {
+  font-family: inherit; font-weight: 700; font-size: 0.85rem; color: #fff;
+  background: transparent; border: 2px solid rgba(255,255,255,0.5); border-radius: 999px;
+  padding: 0.4rem 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;
+  white-space: nowrap; max-width: 40vw; overflow: hidden; text-overflow: ellipsis;
+}
+.app-user-btn:hover { border-color: #fff; }
+.app-user-menu {
+  position: absolute; right: 0; top: calc(100% + 0.5rem); background: var(--color-surface);
+  border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+  min-width: 12rem; padding: 0.4rem; display: none; z-index: 40;
+}
+.app-user-menu.open { display: block; }
+.app-user-menu a, .app-user-menu button {
+  display: block; width: 100%; text-align: left; font-family: inherit; font-weight: 700;
+  font-size: 0.9rem; color: var(--color-ink); text-decoration: none; background: none;
+  border: none; border-radius: 6px; padding: 0.6rem 0.7rem; cursor: pointer;
+}
+.app-user-menu a:hover, .app-user-menu button:hover { background: var(--color-paper); }
+.app-user-menu form { margin: 0; }
+
+.app-main { max-width: 1100px; margin: 0 auto; padding: 1.75rem 1.25rem 3rem; width: 100%; }
+.app-page-head { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem; }
+.app-eyebrow { color: var(--color-brand); font-weight: 800; font-size: 0.75rem; letter-spacing: 0.14em; margin-bottom: 0.4rem; }
+</style>
+{{end}}
+
+{{define "app-header"}}
+<header class="app-header">
+  <div class="wrap">
+    <a class="app-brand" href="/dashboard">
+      {{if logoURLDark}}
+      <img src="{{logoURLDark}}" alt="pdlife.app" class="app-brand-logo">
+      {{else}}
+      <span class="app-brand-text">pdlife.app</span>
+      {{end}}
+    </a>
+    <button type="button" class="app-nav-toggle" id="app-nav-toggle" aria-label="เมนู" aria-expanded="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <nav class="app-nav" id="app-nav">
+      {{if .NavTreatmentLabel}}
+      <a href="{{.NavTreatmentLink}}" class="{{if eq .Active .NavTreatmentLink}}active{{end}}">{{.NavTreatmentLabel}}</a>
+      {{else}}
+      <span class="app-nav-disabled" title="เร็วๆ นี้">Log Book (เร็วๆ นี้)</span>
+      {{end}}
+      <a href="/lab-results" class="{{if eq .Active "/lab-results"}}active{{end}}">ผลตรวจเลือด</a>
+      <a href="/food-check" class="{{if eq .Active "/food-check"}}active{{end}}">Food Check</a>
+      <a href="/news" class="{{if eq .Active "/news"}}active{{end}}">ข่าวสารและบทความ</a>
+    </nav>
+    <div class="app-user">
+      <button type="button" class="app-user-btn" id="app-user-btn" aria-expanded="false">{{if .User}}{{.User.Nickname}}{{end}} ▾</button>
+      <div class="app-user-menu" id="app-user-menu">
+        <a href="/profile">จัดการโปรไฟล์</a>
+        {{if .IsAdmin}}<a href="/admin/content-queue">Content Queue</a>
+        <a href="/admin/editorial">Editorial Articles</a>{{end}}
+        <form method="post" action="/logout"><button type="submit">ออกจากระบบ</button></form>
+      </div>
+    </div>
+  </div>
+</header>
+<script>
+(function () {
+  var navToggle = document.getElementById('app-nav-toggle');
+  var nav = document.getElementById('app-nav');
+  if (navToggle && nav) {
+    navToggle.addEventListener('click', function () {
+      var open = nav.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+  var userBtn = document.getElementById('app-user-btn');
+  var userMenu = document.getElementById('app-user-menu');
+  if (userBtn && userMenu) {
+    userBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = userMenu.classList.toggle('open');
+      userBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    document.addEventListener('click', function () {
+      userMenu.classList.remove('open');
+      userBtn.setAttribute('aria-expanded', 'false');
+    });
+  }
+})();
+</script>
+{{end}}
