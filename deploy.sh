@@ -35,6 +35,15 @@ go test ./...
 echo "==> Building linux/amd64 binary"
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o "$BUILD_PATH" .
 
+# The migrations are not applied here — AutoMigrate is off and they are run
+# by hand (migrations/README.md). They are shipped so that the file is on
+# the server when someone needs to run it; before this, applying one meant
+# first working out how to get it there, which is a bad thing to be
+# improvising against a live database.
+# tar over ssh rather than scp: the server has no sftp subsystem.
+echo "==> Syncing migrations/ (not running them)"
+tar czf - migrations | ssh "$DEPLOY_HOST" "cd ${REMOTE_DIR} && tar xzf -"
+
 echo "==> Uploading binary"
 ssh "$DEPLOY_HOST" "cat > ${REMOTE_DIR}/${BIN_NAME}.new" < "$BUILD_PATH"
 
@@ -84,3 +93,7 @@ for path in / /healthz /register /login; do
 done
 
 echo "==> Deploy complete"
+echo
+echo "    Migrations are in ${REMOTE_DIR}/migrations/ but were NOT run."
+echo "    If this deploy needed one:"
+echo "      ssh ${DEPLOY_HOST} 'cd ${REMOTE_DIR} && mysql -u DB_USER -p DB_NAME < migrations/FILE.sql'"
