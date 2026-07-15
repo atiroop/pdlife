@@ -1,0 +1,34 @@
+{{/* Shared rule-based abnormal-values card — used by /dashboard and
+     /lab-results so the two can never drift on wording/styling. The
+     actual abnormal-detection logic (no AI, no cross-value synthesis —
+     see Phase 6 spec) lives in internal/handler/lab_results.go's
+     buildLabAbnormalItems, the single source of truth for both call
+     sites. Expects a dict with "AbnormalItems" ([]handler.LabAbnormalItem)
+     and "Disclaimer" (string). */}}
+
+{{define "lab-abnormal-css"}}
+<style>
+.lab-abnormal-card { padding: 1.1rem 1.2rem; }
+.lab-abnormal-card.all-normal { background: var(--color-good-tint); }
+.lab-abnormal-card.has-abnormal { background: var(--color-alert-tint); }
+.lab-abnormal-list { list-style: none; margin: 0.6rem 0 0; padding: 0; }
+.lab-abnormal-list li { font-weight: 700; font-size: 0.92rem; padding: 0.35rem 0; }
+.lab-abnormal-note { font-size: 0.8rem; opacity: 0.7; margin-top: 0.8rem; line-height: 1.5; }
+</style>
+{{end}}
+
+{{define "lab-abnormal-card"}}
+<div class="card lab-abnormal-card {{if .AbnormalItems}}has-abnormal{{else}}all-normal{{end}}">
+  <h2 style="margin:0;font-size:1rem;">ผลตรวจล่าสุด</h2>
+  {{if .AbnormalItems}}
+  <ul class="lab-abnormal-list">
+    {{range .AbnormalItems}}
+    <li>&#9888; {{.Message}}</li>
+    {{end}}
+  </ul>
+  {{else}}
+  <p style="margin:0.6rem 0 0;font-weight:700;">ผลตรวจล่าสุดอยู่ในเกณฑ์ปกติทุกรายการ</p>
+  {{end}}
+  <p class="lab-abnormal-note">กรุณาปรึกษาแพทย์ผู้ดูแลเพื่อประเมินผลตรวจนี้อย่างละเอียด<br>{{.Disclaimer}}</p>
+</div>
+{{end}}

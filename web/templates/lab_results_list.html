@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ผลตรวจเลือด — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+{{template "lab-abnormal-css" .}}
+<style>
+.count-note { opacity: 0.6; font-size: 0.85rem; margin-top: 0.3rem; }
+.empty-state { padding: 2.5rem 1.5rem; text-align: center; }
+.empty-state p { margin-bottom: 0.8rem; opacity: 0.7; }
+.lab-abnormal-card { margin-bottom: 1.5rem; }
+
+.chart-toggle { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.chart-toggle button {
+  font-family: inherit; font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.9rem; border-radius: 999px;
+  border: 2px solid var(--color-ink); background: var(--color-surface); color: var(--color-ink); cursor: pointer;
+}
+.chart-toggle button.active { background: var(--color-ink); color: #fff; }
+.chart-pane { display: none; }
+.chart-pane.active { display: block; }
+.trend-card { padding: 1.1rem 1.2rem 1.3rem; }
+.trend-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.6rem; }
+.trend-unit { font-size: 0.8rem; opacity: 0.6; font-weight: 700; }
+.trend-svg-wrap { border: 2px solid rgba(21,21,22,0.12); border-radius: 8px; background: #FBF9FF; overflow: hidden; }
+.trend-svg { width: 100%; height: auto; display: block; }
+.trend-empty { height: 10rem; display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(21,21,22,0.2); border-radius: 8px; font-weight: 700; opacity: 0.6; font-size: 0.9rem; }
+
+.logs-table-wrap { overflow-x: auto; }
+table.logs-table { width: 100%; min-width: 130rem; border-collapse: collapse; font-size: 0.83rem; }
+table.logs-table th {
+  text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 0.6rem 0.7rem; border-bottom: 3px solid var(--color-ink); font-weight: 800;
+  background: var(--color-surface);
+}
+table.logs-table td { padding: 0.6rem 0.7rem; border-bottom: 2px solid rgba(21,21,22,0.08); white-space: nowrap; }
+table.logs-table tr:hover td { background: rgba(255,61,110,0.04); }
+table.logs-table th:last-child,
+table.logs-table td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  box-shadow: -6px 0 6px -6px rgba(21,21,22,0.35);
+}
+table.logs-table th:last-child { z-index: 2; }
+table.logs-table tr:hover td:last-child { background: #FFF5F7; }
+.row-actions { display: flex; gap: 0.4rem; }
+.row-actions button, .row-actions a {
+  font-family: inherit; font-weight: 800; font-size: 0.8rem; border: none; background: none; cursor: pointer;
+  padding: 0.3rem 0.6rem; border-radius: 999px; text-decoration: none;
+}
+.row-actions a { color: #7C3AED; }
+.row-actions a:hover { background: #EDE9FE; }
+.row-actions button { color: #E11D48; }
+.row-actions button:hover { background: #FCE7F3; }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <div class="app-page-head">
+    <div>
+      <p class="app-eyebrow">{{"// ผลตรวจเลือด"}}</p>
+      <h1>ผลตรวจเลือด</h1>
+      <p class="count-note">{{len .Rows}} รายการ</p>
+    </div>
+    <a class="btn btn-primary" href="/lab-results/new" style="display:inline-block;width:auto;">+ บันทึกผลตรวจ</a>
+  </div>
+
+  {{if not .Rows}}
+  <div class="card empty-state">
+    <p>ยังไม่มีบันทึกผลตรวจเลือด</p>
+    <a class="btn btn-primary" href="/lab-results/new" style="display:inline-block;width:auto;">บันทึกครั้งแรก</a>
+  </div>
+  {{else}}
+
+  {{template "lab-abnormal-card" (dict "AbnormalItems" .AbnormalItems "Disclaimer" .Disclaimer)}}
+
+  <h2 class="section-title" style="font-size:1.1rem;margin:0 0 0.9rem;">แนวโน้ม</h2>
+  <div class="chart-toggle">
+    <button type="button" class="chart-toggle-btn active" data-target="chart-hb">Hb</button>
+    <button type="button" class="chart-toggle-btn" data-target="chart-k">K</button>
+    <button type="button" class="chart-toggle-btn" data-target="chart-albumin">Albumin</button>
+    <button type="button" class="chart-toggle-btn" data-target="chart-cr">Cr</button>
+  </div>
+  <div class="chart-pane active" id="chart-hb">{{index .Charts "hb"}}</div>
+  <div class="chart-pane" id="chart-k">{{index .Charts "k"}}</div>
+  <div class="chart-pane" id="chart-albumin">{{index .Charts "albumin"}}</div>
+  <div class="chart-pane" id="chart-cr">{{index .Charts "cr"}}</div>
+
+  <h2 class="section-title" style="font-size:1.1rem;margin:1.75rem 0 0.9rem;">รายการย้อนหลัง</h2>
+  <div class="card logs-table-wrap">
+    <table class="logs-table">
+      <thead>
+        <tr>
+          <th>วันที่</th><th>Hct</th><th>Hb</th><th>WBC</th><th>Platelet</th>
+          <th>BUN</th><th>Cr</th><th>Na</th><th>K</th><th>CO2</th><th>Ca</th><th>PO4</th><th>Albumin</th>
+          {{if .IsHD}}<th>Kt/V</th><th>URR</th><th>nPCR</th>{{end}}
+          <th>FBS</th><th>HbA1C</th><th>Uric acid</th><th>PTH</th><th>Ferritin</th>
+          <th>Serum iron</th><th>TIBC</th><th>%T sat</th><th>Chol</th><th>HDL</th><th>LDL</th>
+          <th>HBsAg</th><th>HBsAb</th><th>Anti HCV</th><th>Anti HIV</th>
+          <th>จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Rows}}
+        <tr>
+          <td class="mono-value">{{formatDate .LogDate}}</td>
+          <td class="mono-value">{{fmtNutrient .Hct}}</td>
+          <td class="mono-value">{{fmtNutrient .Hb}}</td>
+          <td class="mono-value">{{if .WBC}}{{deref .WBC}}{{else}}-{{end}}</td>
+          <td class="mono-value">{{if .PlateletCount}}{{deref .PlateletCount}}{{else}}-{{end}}</td>
+          <td class="mono-value">{{fmtNutrient .BUN}}</td>
+          <td class="mono-value">{{fmtNutrient .Cr}}</td>
+          <td class="mono-value">{{fmtNutrient .Na}}</td>
+          <td class="mono-value">{{fmtNutrient .K}}</td>
+          <td class="mono-value">{{fmtNutrient .CO2}}</td>
+          <td class="mono-value">{{fmtNutrient .Ca}}</td>
+          <td class="mono-value">{{fmtNutrient .PO4}}</td>
+          <td class="mono-value">{{fmtNutrient .Albumin}}</td>
+          {{if $.IsHD}}
+          <td class="mono-value">{{fmtNutrient .KtVValue}}</td>
+          <td class="mono-value">{{fmtNutrient .URR}}</td>
+          <td class="mono-value">{{fmtNutrient .NPCR}}</td>
+          {{end}}
+          <td class="mono-value">{{fmtNutrient .FBS}}</td>
+          <td class="mono-value">{{fmtNutrient .HbA1C}}</td>
+          <td class="mono-value">{{fmtNutrient .UricAcid}}</td>
+          <td class="mono-value">{{fmtNutrient .PTH}}</td>
+          <td class="mono-value">{{fmtNutrient .Ferritin}}</td>
+          <td class="mono-value">{{fmtNutrient .SerumIron}}</td>
+          <td class="mono-value">{{fmtNutrient .TIBC}}</td>
+          <td class="mono-value">{{fmtNutrient .TSatPercent}}</td>
+          <td class="mono-value">{{fmtNutrient .Chol}}</td>
+          <td class="mono-value">{{fmtNutrient .HDL}}</td>
+          <td class="mono-value">{{fmtNutrient .LDL}}</td>
+          <td>{{labFlagShortLabel .HBsAg}}</td>
+          <td>{{labFlagShortLabel .HBsAb}}</td>
+          <td>{{labFlagShortLabel .AntiHCV}}</td>
+          <td>{{labFlagShortLabel .AntiHIV}}</td>
+          <td>
+            <div class="row-actions">
+              <a href="/lab-results/{{.ID}}/edit">แก้ไข</a>
+              <form method="post" action="/lab-results/{{.ID}}/delete" onsubmit="return confirm('ลบบันทึกผลตรวจวันที่ {{formatDate .LogDate}}?');">
+                <button type="submit">ลบ</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{end}}
+</main>
+
+<script>
+(function () {
+  var buttons = document.querySelectorAll('.chart-toggle-btn');
+  buttons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      buttons.forEach(function (b) { b.classList.remove('active'); });
+      document.querySelectorAll('.chart-pane').forEach(function (p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      var target = document.getElementById(btn.getAttribute('data-target'));
+      if (target) target.classList.add('active');
+    });
+  });
+})();
+</script>
+
+{{template "cookie-consent" .}}
+</body>
+</html>

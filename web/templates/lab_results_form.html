@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{if .IsEditing}}แก้ไขผลตรวจ{{else}}บันทึกผลตรวจใหม่{{end}} — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+<style>
+.form-panel { padding: 1.4rem 1.4rem 1.6rem; margin-bottom: 1.25rem; }
+.form-panel h2 { font-size: 1.1rem; margin-bottom: 0.9rem; }
+.field-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 640px) { .field-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 940px) { .field-grid { grid-template-columns: repeat(3, 1fr); } }
+.field label { display: block; font-weight: 800; font-size: 0.85rem; margin-bottom: 0.4rem; }
+.field input, .field select, .field textarea {
+  width: 100%; font-family: inherit; font-size: 0.92rem; font-weight: 600;
+  padding: 0.7rem 0.85rem; border-radius: 8px; border: 2px solid rgba(21,21,22,0.18);
+  background: #fff; color: var(--color-ink);
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--color-brand);
+}
+.field-wide { grid-column: 1 / -1; }
+.field-hint { margin-top: 0.35rem; font-size: 0.78rem; opacity: 0.65; line-height: 1.5; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: center; margin-top: 0.5rem; }
+.error-banner {
+  border: var(--border); border-radius: var(--radius); background: var(--color-alert-tint);
+  color: var(--color-alert); font-weight: 800; padding: 0.8rem 1rem; margin-bottom: 1.25rem;
+}
+.btn-danger { color: var(--color-alert); }
+.form-note { font-size: 0.85rem; opacity: 0.65; margin-bottom: 1.25rem; line-height: 1.6; }
+
+.accordion { padding: 0; margin-bottom: 1.25rem; overflow: hidden; }
+.accordion summary {
+  cursor: pointer; list-style: none; padding: 1.1rem 1.4rem; font-weight: 800; font-size: 1rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.accordion summary::-webkit-details-marker { display: none; }
+.accordion summary .accordion-arrow { font-size: 1.1rem; transition: transform 0.15s ease; flex-shrink: 0; }
+.accordion[open] summary .accordion-arrow { transform: rotate(90deg); }
+.accordion summary .accordion-sub { font-weight: 400; font-size: 0.8rem; opacity: 0.6; margin-left: 0.5rem; }
+.accordion-body { padding: 0 1.4rem 1.5rem; border-top: 2px solid rgba(21,21,22,0.1); }
+.accordion-body .field-grid { margin-top: 1.25rem; }
+.accordion-body h3 { font-size: 0.9rem; margin: 1.5rem 0 0.9rem; opacity: 0.75; }
+.accordion-body h3:first-child { margin-top: 1.25rem; }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <div class="app-page-head">
+    <div>
+      <p class="app-eyebrow">{{if .IsEditing}}{{"// แก้ไขผลตรวจ"}}{{else}}{{"// บันทึกผลตรวจใหม่"}}{{end}}</p>
+      <h1>{{if .IsEditing}}แก้ไขผลตรวจเลือด{{else}}บันทึกผลตรวจเลือดใหม่{{end}}</h1>
+    </div>
+  </div>
+
+  <p class="form-note">กรอกเฉพาะค่าที่ตรวจจริงในวันนี้ ไม่ต้องกรอกให้ครบทุกช่อง — แต่ละค่ามีความถี่การตรวจต่างกัน</p>
+
+  {{if .Error}}<div class="error-banner">{{.Error}}</div>{{end}}
+
+  <form method="post" action="{{if .IsEditing}}/lab-results/{{.Log.ID}}/edit{{else}}/lab-results/new{{end}}" id="labResultForm">
+    <section class="card form-panel">
+      <h2>วันที่ตรวจ</h2>
+      <div class="field-grid">
+        <div class="field">
+          <label>วันที่ตรวจ</label>
+          <input type="date" name="logDate" required value="{{if .IsEditing}}{{formatDateInput .Log.LogDate}}{{else}}{{.Today}}{{end}}">
+        </div>
+      </div>
+    </section>
+
+    <details class="card accordion" open>
+      <summary>ตรวจทุก 3 เดือน <span class="accordion-arrow">&rsaquo;</span></summary>
+      <div class="accordion-body">
+        <h3>ความเข้มข้นเลือด</h3>
+        <div class="field-grid">
+          <div class="field">
+            <label>Hct (%)</label>
+            <input type="number" name="hct" step="0.01" value="{{if .Log.Hct}}{{printf "%.2f" (deref .Log.Hct)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>Hb (g/dL)</label>
+            <input type="number" name="hb" step="0.01" value="{{if .Log.Hb}}{{printf "%.2f" (deref .Log.Hb)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>WBC (/mm³)</label>
+            <input type="number" name="wbc" step="1" value="{{if .Log.WBC}}{{deref .Log.WBC}}{{end}}">
+          </div>
+          <div class="field">
+            <label>Platelet (/mm³)</label>
+            <input type="number" name="plateletCount" step="1" value="{{if .Log.PlateletCount}}{{deref .Log.PlateletCount}}{{end}}">
+          </div>
+        </div>
+
+        <h3>เกลือแร่/ไต</h3>
+        <div class="field-grid">
+          <div class="field">
+            <label>BUN (mg/dL)</label>
+            <input type="number" name="bun" step="0.01" value="{{if .Log.BUN}}{{printf "%.2f" (deref .Log.BUN)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>Cr (mg/dL)</label>
+            <input type="number" name="cr" step="0.01" value="{{if .Log.Cr}}{{printf "%.2f" (deref .Log.Cr)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>Na (mEq/L)</label>
+            <input type="number" name="na" step="0.01" value="{{if .Log.Na}}{{printf "%.2f" (deref .Log.Na)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>K (mEq/L)</label>
+            <input type="number" name="k" step="0.01" value="{{if .Log.K}}{{printf "%.2f" (deref .Log.K)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>CO2 (mEq/L)</label>
+            <input type="number" name="co2" step="0.01" value="{{if .Log.CO2}}{{printf "%.2f" (deref .Log.CO2)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>Ca (mg/dL)</label>
+            <input type="number" name="ca" step="0.01" value="{{if .Log.Ca}}{{printf "%.2f" (deref .Log.Ca)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>PO4 (mg/dL)</label>
+            <input type="number" name="po4" step="0.01" value="{{if .Log.PO4}}{{printf "%.2f" (deref .Log.PO4)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>Albumin (g/dL)</label>
+            <input type="number" name="albumin" step="0.01" value="{{if .Log.Albumin}}{{printf "%.2f" (deref .Log.Albumin)}}{{end}}">
+          </div>
+        </div>
+
+        {{if .IsHD}}
+        <h3>เฉพาะผู้ป่วย HD</h3>
+        <div class="field-grid">
+          <div class="field field-wide">
+            <label>Kt/V</label>
+            <input type="number" name="ktVValue" step="0.01" value="{{if .Log.KtVValue}}{{printf "%.2f" (deref .Log.KtVValue)}}{{end}}">
+            <p class="field-hint">{{.KtVReferenceText}}</p>
+          </div>
+          <div class="field">
+            <label>URR (%)</label>
+            <input type="number" name="urr" step="0.01" value="{{if .Log.URR}}{{printf "%.2f" (deref .Log.URR)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>nPCR (g/kg/day)</label>
+            <input type="number" name="npcr" step="0.01" value="{{if .Log.NPCR}}{{printf "%.2f" (deref .Log.NPCR)}}{{end}}">
+          </div>
+        </div>
+        {{end}}
+      </div>
+    </details>
+
+    <details class="card accordion">
+      <summary>ตรวจทุก 6 เดือน / 1 ปี <span class="accordion-arrow">&rsaquo;</span></summary>
+      <div class="accordion-body">
+        <h3>เบาหวาน/ไขมัน/กรดยูริก</h3>
+        <div class="field-grid">
+          <div class="field">
+            <label>FBS (mg/dL)</label>
+            <input type="number" name="fbs" step="0.01" value="{{if .Log.FBS}}{{printf "%.2f" (deref .Log.FBS)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>HbA1C (%)</label>
+            <input type="number" name="hba1c" step="0.01" value="{{if .Log.HbA1C}}{{printf "%.2f" (deref .Log.HbA1C)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>Uric acid (mg/dL)</label>
+            <input type="number" name="uricAcid" step="0.01" value="{{if .Log.UricAcid}}{{printf "%.2f" (deref .Log.UricAcid)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>Chol (mg/dL)</label>
+            <input type="number" name="chol" step="0.01" value="{{if .Log.Chol}}{{printf "%.2f" (deref .Log.Chol)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>HDL (mg/dL)</label>
+            <input type="number" name="hdl" step="0.01" value="{{if .Log.HDL}}{{printf "%.2f" (deref .Log.HDL)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>LDL (mg/dL)</label>
+            <input type="number" name="ldl" step="0.01" value="{{if .Log.LDL}}{{printf "%.2f" (deref .Log.LDL)}}{{end}}">
+          </div>
+        </div>
+
+        <h3>ฮอร์โมน/ธาตุเหล็ก</h3>
+        <div class="field-grid">
+          <div class="field">
+            <label>PTH (pg/mL)</label>
+            <input type="number" name="pth" step="0.01" value="{{if .Log.PTH}}{{printf "%.2f" (deref .Log.PTH)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>Ferritin (ng/mL)</label>
+            <input type="number" name="ferritin" step="0.01" value="{{if .Log.Ferritin}}{{printf "%.2f" (deref .Log.Ferritin)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>Serum iron (mcg/dL)</label>
+            <input type="number" name="serumIron" step="0.01" value="{{if .Log.SerumIron}}{{printf "%.2f" (deref .Log.SerumIron)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>TIBC (mcg/dL)</label>
+            <input type="number" name="tibc" step="0.01" value="{{if .Log.TIBC}}{{printf "%.2f" (deref .Log.TIBC)}}{{end}}">
+          </div>
+          <div class="field">
+            <label>%T sat (%)</label>
+            <input type="number" name="tSatPercent" step="0.01" value="{{if .Log.TSatPercent}}{{printf "%.2f" (deref .Log.TSatPercent)}}{{end}}">
+          </div>
+        </div>
+
+        <h3>ตรวจเชื้อ/ภูมิคุ้มกัน</h3>
+        <div class="field-grid">
+          <div class="field">
+            <label>HBsAg</label>
+            <select name="hbsag">
+              <option value="">-- ไม่ได้ตรวจ --</option>
+              <option value="negative" {{if labFlagSelected .Log.HBsAg "negative"}}selected{{end}}>Negative (ลบ)</option>
+              <option value="positive" {{if labFlagSelected .Log.HBsAg "positive"}}selected{{end}}>Positive (บวก)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>HBsAb</label>
+            <select name="hbsab">
+              <option value="">-- ไม่ได้ตรวจ --</option>
+              <option value="negative" {{if labFlagSelected .Log.HBsAb "negative"}}selected{{end}}>Negative (ลบ)</option>
+              <option value="positive" {{if labFlagSelected .Log.HBsAb "positive"}}selected{{end}}>Positive (บวก)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Anti HCV</label>
+            <select name="antiHcv">
+              <option value="">-- ไม่ได้ตรวจ --</option>
+              <option value="negative" {{if labFlagSelected .Log.AntiHCV "negative"}}selected{{end}}>Negative (ลบ)</option>
+              <option value="positive" {{if labFlagSelected .Log.AntiHCV "positive"}}selected{{end}}>Positive (บวก)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Anti HIV</label>
+            <select name="antiHiv">
+              <option value="">-- ไม่ได้ตรวจ --</option>
+              <option value="negative" {{if labFlagSelected .Log.AntiHIV "negative"}}selected{{end}}>Negative (ลบ)</option>
+              <option value="positive" {{if labFlagSelected .Log.AntiHIV "positive"}}selected{{end}}>Positive (บวก)</option>
+            </select>
+          </div>
+        </div>
+
+        <h3>ภาพถ่าย/คลื่นหัวใจ</h3>
+        <div class="field-grid">
+          <div class="field field-wide">
+            <label>CXR (ผลอ่านฟิล์ม/ข้อสังเกต)</label>
+            <textarea name="cxrFinding" rows="2">{{if .Log.CXRFinding}}{{deref .Log.CXRFinding}}{{end}}</textarea>
+          </div>
+          <div class="field field-wide">
+            <label>EKG (ผลอ่าน/ข้อสังเกต)</label>
+            <textarea name="ekgFinding" rows="2">{{if .Log.EKGFinding}}{{deref .Log.EKGFinding}}{{end}}</textarea>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <section class="card form-panel">
+      <h2>หมายเหตุ</h2>
+      <div class="field">
+        <label>หมายเหตุ (ถ้ามี)</label>
+        <textarea name="notes" rows="3">{{if .Log.Notes}}{{deref .Log.Notes}}{{end}}</textarea>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" style="width:auto;">{{if .IsEditing}}อัปเดตผลตรวจ{{else}}บันทึกผลตรวจ{{end}}</button>
+      <a class="btn" href="/lab-results" style="width:auto;">ยกเลิก</a>
+    </div>
+  </form>
+
+  {{if .IsEditing}}
+  <form method="post" action="/lab-results/{{.Log.ID}}/delete" onsubmit="return confirm('ลบบันทึกผลตรวจนี้?');" style="margin-top:0.75rem;">
+    <button type="submit" class="btn btn-danger" style="width:auto;display:inline-block;">ลบบันทึกนี้</button>
+  </form>
+  {{end}}
+</main>
+
+{{template "cookie-consent" .}}
+</body>
+</html>
