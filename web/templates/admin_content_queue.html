@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Moderation Queue — pdlife.app Admin</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+<style>
+.queue-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.25rem; margin-bottom: 1.5rem; }
+.source-filter { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.source-filter a {
+  font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.9rem; border-radius: 999px;
+  border: 2px solid var(--color-ink); text-decoration: none; color: var(--color-ink);
+}
+.source-filter a.active { background: var(--color-ink); color: #fff; }
+.pending-count-badge {
+  font-weight: 800; font-size: 0.95rem; background: var(--color-watch-tint);
+  border: 2px solid var(--color-ink); border-radius: 999px; padding: 0.4rem 1rem;
+}
+
+.queue-list { display: flex; flex-direction: column; gap: 1.25rem; }
+.queue-item { padding: 1.3rem 1.4rem; }
+
+.thumb-wrap { margin: -1.3rem -1.4rem 0.9rem; border-radius: 8px 8px 0 0; overflow: hidden; }
+.thumb-img { width: 100%; height: 12rem; object-fit: cover; display: block; }
+.thumb-placeholder {
+  width: 100%; height: 12rem; display: flex; align-items: center; justify-content: center;
+  background: var(--color-ink); color: rgba(255,255,255,0.55); font-weight: 700; font-size: 0.85rem;
+}
+
+.queue-item-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
+.source-badge { font-weight: 800; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.25rem 0.7rem; border-radius: 999px; border: 2px solid var(--color-ink); }
+.source-badge-nephrothai { background: #DCFCE7; }
+.source-badge-pubmed { background: #DBEAFE; }
+.queue-item-date { font-size: 0.82rem; opacity: 0.65; font-weight: 700; }
+.queue-item-title { font-size: 1.15rem; margin-bottom: 0.8rem; }
+
+.content-preview {
+  border: 2px solid rgba(21,21,22,0.15); border-radius: 8px; padding: 0.9rem 1.1rem;
+  background: #FBF9FF; margin-bottom: 0.9rem; font-size: 0.92rem;
+}
+.content-preview.scrollable { max-height: 16rem; overflow-y: auto; }
+.content-preview p { margin-bottom: 0.6rem; }
+
+.credit-block {
+  border: 2px dashed rgba(21,21,22,0.3); border-radius: 8px; padding: 0.7rem 0.9rem;
+  margin-bottom: 1rem; font-size: 0.82rem; display: flex; flex-wrap: wrap;
+  align-items: center; justify-content: space-between; gap: 0.5rem;
+}
+.credit-block .credit-label { opacity: 0.55; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 0.4rem; }
+.credit-block a { color: #7C3AED; font-weight: 700; text-decoration: none; }
+.credit-block a:hover { text-decoration: underline; }
+
+.queue-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+.review-btn {
+  font-family: inherit; font-weight: 800; font-size: 0.9rem; border: var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 0.55rem 1.3rem;
+  cursor: pointer; background: var(--color-surface); color: var(--color-ink);
+}
+.review-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--color-ink); }
+.review-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.review-btn-approve { background: var(--color-good); }
+.review-btn-reject { background: var(--color-alert); color: #fff; }
+.review-btn-regenerate { background: #DBEAFE; }
+
+.empty-state { padding: 2.5rem 1.5rem; text-align: center; }
+.empty-state p { opacity: 0.7; }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <div class="app-page-head">
+    <div>
+      <p class="app-eyebrow">{{"// Phase 4 — News & Research"}}</p>
+      <h1>Content Moderation Queue</h1>
+    </div>
+    <span class="pending-count-badge">รอตรวจสอบ <span id="pending-count">{{.TotalPending}}</span> รายการ</span>
+  </div>
+
+  <div class="queue-toolbar">
+    <div class="source-filter">
+      <a href="/admin/content-queue" class="{{if eq .SourceFilter ""}}active{{end}}">ทั้งหมด</a>
+      <a href="/admin/content-queue?source=nephrothai" class="{{if eq .SourceFilter "nephrothai"}}active{{end}}">nephrothai</a>
+      <a href="/admin/content-queue?source=pubmed" class="{{if eq .SourceFilter "pubmed"}}active{{end}}">pubmed</a>
+    </div>
+  </div>
+
+  <div class="queue-list" id="queue-list">
+    {{range .Rows}}
+    <div class="card queue-item" id="queue-item-{{.Item.ID}}">
+      <div class="thumb-wrap">
+        {{if and (eq .Item.FeatureImageStatus "generated") .Item.FeatureImageURL}}
+        <img src="{{.Item.FeatureImageURL}}" alt="" class="thumb-img" id="thumb-img-{{.Item.ID}}">
+        {{else}}
+        <div class="thumb-placeholder" id="thumb-img-{{.Item.ID}}"><span>ไม่มีภาพ</span></div>
+        {{end}}
+      </div>
+      <div class="queue-item-head">
+        <span class="source-badge source-badge-{{.Item.Source}}">{{.Item.Source}}</span>
+        <span class="queue-item-date">{{if .Item.PublishedAt}}{{formatDate (deref .Item.PublishedAt)}}{{else}}ไม่ทราบวันที่{{end}}</span>
+      </div>
+      <h2 class="queue-item-title">{{.Item.TitleTH}}</h2>
+
+      {{if eq .Item.Source "nephrothai"}}
+      <div class="content-preview scrollable">{{.ContentHTML}}</div>
+      {{else}}
+      <div class="content-preview">{{.Item.SummaryTH}}</div>
+      {{end}}
+
+      <div class="credit-block">
+        <span><span class="credit-label">เครดิตที่จะแสดง</span>{{.Item.CreditSourceName}}</span>
+        <a href="{{.Item.CreditURL}}" target="_blank" rel="noopener noreferrer">ดูต้นฉบับ →</a>
+      </div>
+
+      <div class="queue-actions">
+        <button type="button" class="review-btn review-btn-approve" data-id="{{.Item.ID}}" data-action="approve">✓ อนุมัติ</button>
+        <button type="button" class="review-btn review-btn-reject" data-id="{{.Item.ID}}" data-action="reject">✕ ปฏิเสธ</button>
+        <button type="button" class="review-btn review-btn-regenerate" data-id="{{.Item.ID}}" data-action="regenerate-image">🖼 สร้างภาพใหม่</button>
+      </div>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="card empty-state" id="empty-state" style="{{if .Rows}}display:none;{{end}}">
+    <p>ไม่มีรายการรอตรวจสอบ{{if .SourceFilter}}ในหมวด {{.SourceFilter}}{{end}}</p>
+  </div>
+</main>
+
+<script>
+(function () {
+  function updatePendingCount(delta) {
+    var el = document.getElementById('pending-count');
+    if (!el) return;
+    var current = parseInt(el.textContent, 10) || 0;
+    el.textContent = Math.max(0, current + delta);
+  }
+
+  function checkEmpty() {
+    var remaining = document.querySelectorAll('.queue-item').length;
+    var emptyState = document.getElementById('empty-state');
+    if (emptyState) emptyState.style.display = remaining === 0 ? 'block' : 'none';
+  }
+
+  document.querySelectorAll('.review-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.dataset.id;
+      var action = btn.dataset.action;
+      var isRegenerate = action === 'regenerate-image';
+      var card = document.getElementById('queue-item-' + id);
+      var buttons = card ? card.querySelectorAll('.review-btn') : [btn];
+      buttons.forEach(function (b) { b.disabled = true; });
+      var originalText = btn.textContent;
+      if (isRegenerate) btn.textContent = 'กำลังสร้างภาพ… (รอสักครู่)';
+
+      fetch('/admin/content-queue/' + id + '/' + action, { method: 'POST' })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data.success) {
+            if (isRegenerate) {
+              var thumbEl = document.getElementById('thumb-img-' + id);
+              if (thumbEl && data.image_url) {
+                var img = document.createElement('img');
+                img.src = data.image_url;
+                img.alt = '';
+                img.className = 'thumb-img';
+                img.id = 'thumb-img-' + id;
+                thumbEl.replaceWith(img);
+              }
+              btn.textContent = originalText;
+              buttons.forEach(function (b) { b.disabled = false; });
+            } else {
+              if (card) card.remove();
+              updatePendingCount(-1);
+              checkEmpty();
+            }
+          } else {
+            alert('เกิดข้อผิดพลาด: ' + (data.error || 'unknown'));
+            btn.textContent = originalText;
+            buttons.forEach(function (b) { b.disabled = false; });
+          }
+        })
+        .catch(function () {
+          alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+          btn.textContent = originalText;
+          buttons.forEach(function (b) { b.disabled = false; });
+        });
+    });
+  });
+})();
+</script>
+
+{{template "cookie-consent" .}}
+</body>
+</html>

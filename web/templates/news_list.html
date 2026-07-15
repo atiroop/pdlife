@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ข่าวสารและบทความ — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+<style>
+.news-list-grid { display: flex; flex-direction: column; gap: 1.1rem; }
+.news-item-card { padding: 1.2rem 1.4rem; }
+
+.news-item-thumb-wrap { margin: -1.2rem -1.4rem 0.9rem; border-radius: 8px 8px 0 0; overflow: hidden; }
+.news-item-thumb { width: 100%; height: 14rem; object-fit: cover; display: block; }
+.news-item-thumb-placeholder {
+  width: 100%; height: 14rem; display: flex; align-items: center; justify-content: center;
+  background: var(--color-ink);
+}
+.news-item-thumb-placeholder img { height: 2.5rem; width: auto; opacity: 0.7; }
+
+.news-item-badge { display: inline-block; font-weight: 800; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.22rem 0.65rem; border-radius: 999px; border: 2px solid var(--color-ink); margin-bottom: 0.5rem; }
+.news-item-badge-nephrothai { background: #DCFCE7; }
+.news-item-badge-pubmed { background: #DBEAFE; }
+.news-item-date { font-size: 0.8rem; opacity: 0.6; font-weight: 700; float: right; }
+.news-item-title { font-size: 1.1rem; margin-bottom: 0.6rem; }
+.news-item-summary { font-size: 0.92rem; margin-bottom: 0.9rem; }
+
+.credit-block {
+  border: 2px dashed rgba(21,21,22,0.3); border-radius: 8px; padding: 0.65rem 0.9rem;
+  font-size: 0.82rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem;
+}
+.credit-block .credit-label { opacity: 0.55; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 0.4rem; }
+.credit-block a { color: #7C3AED; font-weight: 700; text-decoration: none; }
+.credit-block a:hover { text-decoration: underline; }
+
+.empty-state { padding: 2.5rem 1.5rem; text-align: center; }
+.empty-state p { opacity: 0.7; }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <div class="app-page-head">
+    <div>
+      <p class="app-eyebrow">{{"// ความรู้และงานวิจัยที่คัดสรรมาให้"}}</p>
+      <h1>ข่าวสารและบทความ</h1>
+    </div>
+  </div>
+
+  {{if not .Items}}
+  <div class="card empty-state">
+    <p>ยังไม่มีบทความเผยแพร่ในขณะนี้</p>
+  </div>
+  {{else}}
+  <div class="news-list-grid">
+    {{range .Items}}
+    <div class="card news-item-card">
+      <div class="news-item-thumb-wrap">
+        {{if and (eq .FeatureImageStatus "generated") .FeatureImageURL}}
+        <img src="{{.FeatureImageURL}}" alt="" class="news-item-thumb" loading="lazy">
+        {{else}}
+        <div class="news-item-thumb-placeholder">
+          {{if logoURLDark}}<img src="{{logoURLDark}}" alt="pdlife.app">{{end}}
+        </div>
+        {{end}}
+      </div>
+      <span class="news-item-date">{{if .PublishedAt}}{{formatDate (deref .PublishedAt)}}{{else}}ไม่ทราบวันที่{{end}}</span>
+      <span class="news-item-badge news-item-badge-{{.Source}}">{{.Source}}</span>
+      <h2 class="news-item-title">{{.TitleTH}}</h2>
+      <p class="news-item-summary">{{.SummaryTH}}</p>
+      <div class="credit-block">
+        <span><span class="credit-label">ที่มา</span>{{.CreditSourceName}}</span>
+        <a href="{{.CreditURL}}" target="_blank" rel="noopener noreferrer">อ่านต้นฉบับ →</a>
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+</main>
+
+{{template "cookie-consent" .}}
+</body>
+</html>
