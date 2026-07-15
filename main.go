@@ -25,11 +25,35 @@ import (
 //go:embed web/templates/*.html
 var templateFS embed.FS
 
+// csrfContextKey is where the CSRF middleware stores the token for the
+// current request, and csrfTemplateKey is what templates read it as.
+const (
+	csrfContextKey  = "csrf"
+	csrfTemplateKey = "csrf"
+	csrfFormField   = "_csrf"
+	csrfHeaderName  = "X-CSRF-Token"
+)
+
 type templateRenderer struct {
 	templates *template.Template
 }
 
+// Render injects the request's CSRF token into the render data so that
+// templates can write {{ .csrf }} without every handler having to thread
+// the token through its own data map — there are ~70 Render calls, and one
+// missed map would be a form that silently 403s.
 func (r *templateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	token, _ := c.Get(csrfContextKey).(string)
+
+	switch d := data.(type) {
+	case map[string]interface{}:
+		d[csrfTemplateKey] = token
+	case map[string]string:
+		d[csrfTemplateKey] = token
+	case nil:
+		data = map[string]interface{}{csrfTemplateKey: token}
+	}
+
 	return r.templates.ExecuteTemplate(w, name, data)
 }
 
@@ -79,6 +103,29 @@ func main() {
 		// on the browser's behalf.
 		HSTSMaxAge:            31536000,
 		HSTSExcludeSubdomains: true,
+	}))
+
+	// Session cookies are SameSite=Lax, which already stops a cross-site
+	// POST from carrying them, so this is a second layer rather than the
+	// only one. It is worth having anyway: Lax is a browser-side promise,
+	// and this app writes health data.
+	//
+	// Both lookups are needed — most submissions are plain form posts, but
+	// the admin content queue and the editorial editor POST via fetch() and
+	// send the token as a header instead (see the templates' csrf-token
+	// meta tag).
+	//
+	// The cookie can be HttpOnly because nothing reads the token from
+	// JavaScript: the server renders it into the page.
+	e.Use(echomw.CSRFWithConfig(echomw.CSRFConfig{
+		TokenLookup:    "form:" + csrfFormField + ",header:" + csrfHeaderName,
+		ContextKey:     csrfContextKey,
+		CookieName:     "_csrf",
+		CookiePath:     "/",
+		CookieHTTPOnly: true,
+		CookieSecure:   strings.HasPrefix(cfg.AppBaseURL, "https://"),
+		CookieSameSite: http.SameSiteLaxMode,
+		CookieMaxAge:   86400,
 	}))
 	funcs := template.FuncMap{
 		"logoURL":     func() string { return cfg.LogoURL },

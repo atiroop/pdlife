@@ -61,7 +61,7 @@ select, input[type="text"] {
 
   {{if .Error}}<div class="error-box">{{.Error}}</div>{{end}}
 
-  <form method="POST" action="/onboarding">
+  <form method="POST" action="/onboarding"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
     <span class="section-label">วิธีการรักษา</span>
 
     <input type="radio" name="treatment_type" value="CAPD" id="tt-capd" class="card-radio">

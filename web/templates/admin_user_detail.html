@@ -167,21 +167,21 @@
       <h2>การดำเนินการ</h2>
       <div class="action-list">
         {{if eq .Target.Role "Unverified"}}
-        <form method="post" action="/admin/users/{{.Target.ID}}/verify-email">
+        <form method="post" action="/admin/users/{{.Target.ID}}/verify-email"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
           <button type="submit" class="action-btn action-btn-verify">✓ ยืนยันอีเมลแทน</button>
         </form>
         <p class="action-note">ใช้เมื่อผู้ใช้ไม่ได้รับอีเมลยืนยัน — ตั้งเป็นยืนยันแล้วทันที</p>
         {{end}}
 
         {{if .IsLocked}}
-        <form method="post" action="/admin/users/{{.Target.ID}}/unlock">
+        <form method="post" action="/admin/users/{{.Target.ID}}/unlock"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
           <button type="submit" class="action-btn action-btn-unlock">🔓 ปลดล็อกบัญชี</button>
         </form>
         <p class="action-note">บัญชีนี้ติดล็อกจากการใส่รหัสผ่านผิดหลายครั้ง — ปลดให้ลองใหม่ได้ทันที</p>
         {{end}}
 
         {{if .Target.SuspendedAt}}
-        <form method="post" action="/admin/users/{{.Target.ID}}/unsuspend">
+        <form method="post" action="/admin/users/{{.Target.ID}}/unsuspend"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
           <button type="submit" class="action-btn action-btn-unsuspend">↩ ยกเลิกการระงับ</button>
         </form>
         <p class="action-note">ผู้ใช้จะกลับมา login ได้ตามปกติ</p>
@@ -203,7 +203,7 @@
     <h3 id="suspend-modal-title">ยืนยันการระงับบัญชี</h3>
     <p>ผู้ใช้ <strong>{{.Target.Nickname}} ({{.Target.Email}})</strong> จะ login ไม่ได้และถูกบังคับ
        logout ทุกอุปกรณ์ทันที จนกว่าจะยกเลิกการระงับ</p>
-    <form method="post" action="/admin/users/{{.Target.ID}}/suspend" id="suspend-form">
+    <form method="post" action="/admin/users/{{.Target.ID}}/suspend" id="suspend-form"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
       <label for="suspend-reason" style="font-weight:700;font-size:0.88rem;display:block;margin-bottom:0.4rem;">เหตุผลในการระงับ (บังคับ)</label>
       <textarea id="suspend-reason" name="reason" required placeholder="เช่น ตรวจพบการใช้งานผิดปกติ / ผู้ใช้ร้องขอเอง ฯลฯ"></textarea>
       <div class="modal-actions">

@@ -87,7 +87,7 @@ table.logs-table tr:hover td:last-child { background: #FFF5F7; }
           <td>
             <div class="row-actions">
               <a href="/hd/{{.ID}}/edit">แก้ไข</a>
-              <form method="post" action="/hd/{{.ID}}/delete" onsubmit="return confirm('ลบบันทึกวันที่ {{formatDate .LogDate}}?');">
+              <form method="post" action="/hd/{{.ID}}/delete" onsubmit="return confirm('ลบบันทึกวันที่ {{formatDate .LogDate}}?');"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
                 <button type="submit">ลบ</button>
               </form>
             </div>

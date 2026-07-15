@@ -67,7 +67,7 @@ input[type="email"], input[type="password"], input[type="text"] {
 
     {{if .Error}}<div class="error-box">{{.Error}}</div>{{end}}
 
-    <form method="POST" action="/register" autocomplete="off">
+    <form method="POST" action="/register" autocomplete="off"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
       <label for="nickname">ชื่อเล่น</label>
       <input type="text" id="nickname" name="nickname" value="{{.Nickname}}" required>
 

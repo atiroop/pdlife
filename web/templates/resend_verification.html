@@ -32,7 +32,7 @@ input[type="email"] {
     {{else}}
       <h1>ส่งลิงก์ยืนยันอีเมลใหม่</h1>
       <p>กรอกอีเมลที่ใช้สมัคร ระบบจะส่งลิงก์ยืนยันใหม่ให้</p>
-      <form method="POST" action="/resend-verification">
+      <form method="POST" action="/resend-verification"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
         <label for="email">อีเมล</label>
         <input type="email" id="email" name="email" required>
         <button type="submit" class="btn btn-primary">ส่งลิงก์ใหม่</button>

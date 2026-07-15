@@ -59,7 +59,7 @@
       </div>
       <div class="editorial-item-actions">
         <a href="/admin/editorial/{{.ID}}/edit">แก้ไข</a>
-        <form method="post" action="/admin/editorial/{{.ID}}/delete" onsubmit="return confirm('ลบบทความ &quot;{{.Title}}&quot; ถาวร?');" style="margin:0;display:inline;">
+        <form method="post" action="/admin/editorial/{{.ID}}/delete" onsubmit="return confirm('ลบบทความ &quot;{{.Title}}&quot; ถาวร?');" style="margin:0;display:inline;"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
           <button type="submit" class="delete-btn">ลบ</button>
         </form>
       </div>

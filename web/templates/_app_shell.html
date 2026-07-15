@@ -102,7 +102,7 @@
         <a href="/profile">จัดการโปรไฟล์</a>
         {{if .IsAdmin}}<a href="/admin/content-queue">Content Queue</a>
         <a href="/admin/editorial">Editorial Articles</a>{{end}}
-        <form method="post" action="/logout"><button type="submit">ออกจากระบบ</button></form>
+        <form method="post" action="/logout"><input type="hidden" name="_csrf" value="{{ $.csrf }}"><button type="submit">ออกจากระบบ</button></form>
       </div>
     </div>
   </div>

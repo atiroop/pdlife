@@ -42,7 +42,7 @@
 
   {{if .Error}}<div class="error-box">{{.Error}}</div>{{end}}
 
-  <form method="POST" action="/consent">
+  <form method="POST" action="/consent"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
     <div class="consent-box">
       <label class="checkbox-row">
         <input type="checkbox" name="health_data_consent" required>

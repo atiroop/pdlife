@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ $.csrf }}">
 <title>Content Moderation Queue — pdlife.app Admin</title>
 <link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -135,6 +136,13 @@
 
 <script>
 (function () {
+  // These actions POST via fetch rather than a form, so the CSRF token
+  // travels as a header instead of a _csrf field.
+  function csrfToken() {
+    var el = document.querySelector('meta[name="csrf-token"]');
+    return el ? el.getAttribute('content') : '';
+  }
+
   function updatePendingCount(delta) {
     var el = document.getElementById('pending-count');
     if (!el) return;
@@ -159,7 +167,7 @@
       var originalText = btn.textContent;
       if (isRegenerate) btn.textContent = 'กำลังสร้างภาพ… (รอสักครู่)';
 
-      fetch('/admin/content-queue/' + id + '/' + action, { method: 'POST' })
+      fetch('/admin/content-queue/' + id + '/' + action, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken() } })
         .then(function (res) { return res.json(); })
         .then(function (data) {
           if (data.success) {

@@ -54,7 +54,7 @@
 
   {{if .Error}}<div class="error-banner">{{.Error}}</div>{{end}}
 
-  <form method="post" action="{{if .IsEditing}}/hd/{{.Log.ID}}/edit{{else}}/hd/new{{end}}" id="hdForm">
+  <form method="post" action="{{if .IsEditing}}/hd/{{.Log.ID}}/edit{{else}}/hd/new{{end}}" id="hdForm"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
     <section class="card form-panel">
       <h2>วันที่และน้ำหนักแห้ง</h2>
       <div class="field-grid">
@@ -124,7 +124,7 @@
   </form>
 
   {{if .IsEditing}}
-  <form method="post" action="/hd/{{.Log.ID}}/delete" onsubmit="return confirm('ลบบันทึกนี้?');" style="margin-top:0.75rem;">
+  <form method="post" action="/hd/{{.Log.ID}}/delete" onsubmit="return confirm('ลบบันทึกนี้?');" style="margin-top:0.75rem;"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
     <button type="submit" class="btn btn-danger" style="width:auto;display:inline-block;">ลบบันทึกนี้</button>
   </form>
   {{end}}

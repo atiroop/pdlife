@@ -93,7 +93,7 @@ table.logs-table tr.risk-row:hover td:last-child { background: var(--color-alert
           <td>
             <div class="row-actions">
               <a href="/capd/{{.Entry.ID}}/edit">แก้ไข</a>
-              <form method="post" action="/capd/{{.Entry.ID}}/delete" onsubmit="return confirm('ลบบันทึกวันที่ {{formatDate .Entry.LogDate}} รอบที่ {{.Entry.CycleNumber}}?');">
+              <form method="post" action="/capd/{{.Entry.ID}}/delete" onsubmit="return confirm('ลบบันทึกวันที่ {{formatDate .Entry.LogDate}} รอบที่ {{.Entry.CycleNumber}}?');"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
                 <button type="submit">ลบ</button>
               </form>
             </div>

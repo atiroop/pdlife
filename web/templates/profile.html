@@ -80,7 +80,7 @@ dialog .dialog-actions { display: flex; gap: 0.75rem; justify-content: flex-end;
     <!-- 2.1 ข้อมูลส่วนตัว -->
     <div class="card profile-section">
       <h2>ข้อมูลส่วนตัว</h2>
-      <form method="POST" action="/profile/name">
+      <form method="POST" action="/profile/name"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
         <label class="field-label" for="nickname">ชื่อ</label>
         <input type="text" id="nickname" name="nickname" value="{{.User.Nickname}}" required>
         <label class="field-label">อีเมล</label>
@@ -93,7 +93,7 @@ dialog .dialog-actions { display: flex; gap: 0.75rem; justify-content: flex-end;
     <!-- 2.2 เปลี่ยนรหัสผ่าน -->
     <div class="card profile-section">
       <h2>เปลี่ยนรหัสผ่าน</h2>
-      <form method="POST" action="/profile/password" id="password-form">
+      <form method="POST" action="/profile/password" id="password-form"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
         <label class="field-label" for="current_password">รหัสผ่านปัจจุบัน</label>
         <input type="password" id="current_password" name="current_password" required>
         <label class="field-label" for="new_password">รหัสผ่านใหม่</label>
@@ -108,7 +108,7 @@ dialog .dialog-actions { display: flex; gap: 0.75rem; justify-content: flex-end;
     <!-- 2.3 ข้อมูลการรักษา -->
     <div class="card profile-section">
       <h2>ข้อมูลการรักษา</h2>
-      <form method="POST" action="/profile/treatment" id="treatment-form">
+      <form method="POST" action="/profile/treatment" id="treatment-form"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
         <input type="hidden" id="original-treatment-type" value="{{.TreatmentType}}">
 
         <input type="radio" name="treatment_type" value="CAPD" id="tt-capd" class="card-radio" {{if eq .TreatmentType "CAPD"}}checked{{end}}>
@@ -153,7 +153,7 @@ dialog .dialog-actions { display: flex; gap: 0.75rem; justify-content: flex-end;
         <p><strong>ยินยอมแล้ว</strong> เมื่อ {{.ConsentAt}}</p>
         {{if .ConsentVersion}}<p>ภายใต้นโยบายความเป็นส่วนตัวฉบับ {{.ConsentVersion}}</p>{{end}}
       </div>
-      <form method="POST" action="/consent/withdraw" onsubmit="return confirm('ถอนความยินยอมแล้วจะไม่สามารถใช้งานสมุดบันทึกการรักษาและ Food Check ได้จนกว่าจะยินยอมใหม่ ยืนยันถอนความยินยอม?');">
+      <form method="POST" action="/consent/withdraw" onsubmit="return confirm('ถอนความยินยอมแล้วจะไม่สามารถใช้งานสมุดบันทึกการรักษาและ Food Check ได้จนกว่าจะยินยอมใหม่ ยืนยันถอนความยินยอม?');"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
         <button type="submit" class="btn">ถอนความยินยอม</button>
       </form>
       {{else}}
@@ -191,7 +191,7 @@ dialog .dialog-actions { display: flex; gap: 0.75rem; justify-content: flex-end;
 <dialog id="delete-account-dialog">
   <h3>ยืนยันการลบบัญชี</h3>
   <p>บัญชีและข้อมูลของคุณจะถูกลบถาวรใน 90 วัน กรุณากรอกรหัสผ่านและพิมพ์คำว่า "{{.DeleteAccountConfirmPhrase}}" เพื่อยืนยัน</p>
-  <form method="POST" action="/profile/delete-account">
+  <form method="POST" action="/profile/delete-account"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
     <label class="field-label" for="delete_password">รหัสผ่านปัจจุบัน</label>
     <input type="password" id="delete_password" name="password" required>
     <label class="field-label" for="delete_confirm_text">พิมพ์ "{{.DeleteAccountConfirmPhrase}}"</label>

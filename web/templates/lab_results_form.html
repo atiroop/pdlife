@@ -65,7 +65,7 @@
 
   {{if .Error}}<div class="error-banner">{{.Error}}</div>{{end}}
 
-  <form method="post" action="{{if .IsEditing}}/lab-results/{{.Log.ID}}/edit{{else}}/lab-results/new{{end}}" id="labResultForm">
+  <form method="post" action="{{if .IsEditing}}/lab-results/{{.Log.ID}}/edit{{else}}/lab-results/new{{end}}" id="labResultForm"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
     <section class="card form-panel">
       <h2>วันที่ตรวจ</h2>
       <div class="field-grid">
@@ -276,7 +276,7 @@
   </form>
 
   {{if .IsEditing}}
-  <form method="post" action="/lab-results/{{.Log.ID}}/delete" onsubmit="return confirm('ลบบันทึกผลตรวจนี้?');" style="margin-top:0.75rem;">
+  <form method="post" action="/lab-results/{{.Log.ID}}/delete" onsubmit="return confirm('ลบบันทึกผลตรวจนี้?');" style="margin-top:0.75rem;"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
     <button type="submit" class="btn btn-danger" style="width:auto;display:inline-block;">ลบบันทึกนี้</button>
   </form>
   {{end}}
