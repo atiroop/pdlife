@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>รายการบันทึก CAPD — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+<style>
+.logs-table-wrap { overflow-x: auto; }
+table.logs-table { width: 100%; min-width: 60rem; border-collapse: collapse; font-size: 0.85rem; }
+table.logs-table th {
+  text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 0.7rem 0.8rem; border-bottom: 3px solid var(--color-ink); font-weight: 800;
+  background: var(--color-surface);
+}
+table.logs-table td { padding: 0.7rem 0.8rem; border-bottom: 2px solid rgba(21,21,22,0.08); white-space: nowrap; }
+table.logs-table tr:hover td { background: rgba(255,61,110,0.04); }
+table.logs-table tr.risk-row td { background: var(--color-alert-tint); }
+table.logs-table tr.risk-row:hover td { background: var(--color-alert-tint); }
+/* keep "จัดการ" (edit/delete) reachable on narrow screens no matter how
+   far the table scrolls horizontally */
+table.logs-table th:last-child,
+table.logs-table td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  box-shadow: -6px 0 6px -6px rgba(21,21,22,0.35);
+}
+table.logs-table th:last-child { z-index: 2; }
+table.logs-table tr:hover td:last-child { background: #FFF5F7; }
+table.logs-table tr.risk-row td:last-child,
+table.logs-table tr.risk-row:hover td:last-child { background: var(--color-alert-tint); }
+.row-actions { display: flex; gap: 0.4rem; }
+.row-actions button, .row-actions a {
+  font-family: inherit; font-weight: 800; font-size: 0.8rem; border: none; background: none; cursor: pointer;
+  padding: 0.3rem 0.6rem; border-radius: 999px; text-decoration: none;
+}
+.row-actions a { color: #7C3AED; }
+.row-actions a:hover { background: #EDE9FE; }
+.row-actions button { color: #E11D48; }
+.row-actions button:hover { background: #FCE7F3; }
+.count-note { opacity: 0.6; font-size: 0.85rem; margin-top: 0.3rem; }
+.empty-state { padding: 2.5rem 1.5rem; text-align: center; }
+.empty-state p { margin-bottom: 0.8rem; opacity: 0.7; }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <div class="app-page-head">
+    <div>
+      <p class="app-eyebrow">{{"// รายการย้อนหลัง"}}</p>
+      <h1>รายการบันทึก CAPD</h1>
+      <p class="count-note">{{len .Rows}} รายการ</p>
+    </div>
+    <a class="btn btn-primary" href="/capd/new" style="display:inline-block;width:auto;">+ บันทึกใหม่</a>
+  </div>
+
+  {{if not .Rows}}
+  <div class="card empty-state">
+    <p>ยังไม่มีบันทึก CAPD</p>
+    <a class="btn btn-primary" href="/capd/new" style="display:inline-block;width:auto;">สร้างบันทึกแรก</a>
+  </div>
+  {{else}}
+  <div class="card logs-table-wrap">
+    <table class="logs-table">
+      <thead>
+        <tr>
+          <th>วันที่</th><th>รอบ</th><th>เดกซ์โทรส</th><th>เข้า (ml)</th><th>ออก (ml)</th>
+          <th>UF สุทธิ</th><th>ลักษณะน้ำยา</th><th>น้ำหนัก</th><th>ความดัน</th><th>ปัสสาวะ</th><th>จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Rows}}
+        <tr class="{{if .IsRisk}}risk-row{{end}}">
+          <td class="mono-value">{{formatDate .Entry.LogDate}}</td>
+          <td class="mono-value">{{.Entry.CycleNumber}}</td>
+          <td class="mono-value">{{printf "%.2f" .Entry.DextroseConcentration}}%</td>
+          <td class="mono-value">{{.Entry.FillVolumeML}}</td>
+          <td class="mono-value">{{.Entry.DrainVolumeML}}</td>
+          <td class="mono-value">{{.Entry.UFVolumeML}}</td>
+          <td>{{if .IsRisk}}⚠ {{end}}{{.AppearanceLabel}}</td>
+          <td class="mono-value">{{printf "%.2f" .Entry.WeightKG}} kg</td>
+          <td class="mono-value">{{.Entry.BPSystolic}}/{{.Entry.BPDiastolic}}</td>
+          <td class="mono-value">{{if .Entry.UrineOutputML}}{{deref .Entry.UrineOutputML}} ml{{else}}—{{end}}</td>
+          <td>
+            <div class="row-actions">
+              <a href="/capd/{{.Entry.ID}}/edit">แก้ไข</a>
+              <form method="post" action="/capd/{{.Entry.ID}}/delete" onsubmit="return confirm('ลบบันทึกวันที่ {{formatDate .Entry.LogDate}} รอบที่ {{.Entry.CycleNumber}}?');">
+                <button type="submit">ลบ</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{end}}
+</main>
+
+{{template "cookie-consent" .}}
+</body>
+</html>

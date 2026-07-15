@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{if .IsEditing}}แก้ไขบันทึก{{else}}บันทึกใหม่{{end}} CAPD — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+<style>
+.form-panel { padding: 1.4rem 1.4rem 1.6rem; margin-bottom: 1.25rem; }
+.form-panel h2 { font-size: 1.1rem; margin-bottom: 0.9rem; }
+.field-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 640px) { .field-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 940px) { .field-grid { grid-template-columns: repeat(3, 1fr); } }
+.field label { display: block; font-weight: 800; font-size: 0.85rem; margin-bottom: 0.4rem; }
+.field input, .field select, .field textarea {
+  width: 100%; font-family: inherit; font-size: 0.92rem; font-weight: 600;
+  padding: 0.7rem 0.85rem; border-radius: 8px; border: 2px solid rgba(21,21,22,0.18);
+  background: #fff; color: var(--color-ink);
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--color-brand);
+}
+.field-hint { margin-top: 0.35rem; font-size: 0.78rem; opacity: 0.65; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: center; margin-top: 0.5rem; }
+.error-banner {
+  border: var(--border); border-radius: var(--radius); background: var(--color-alert-tint);
+  color: var(--color-alert); font-weight: 800; padding: 0.8rem 1rem; margin-bottom: 1.25rem;
+}
+.btn-danger { color: var(--color-alert); }
+
+.uf-preview {
+  border: 2px dashed rgba(21,21,22,0.25); border-radius: 8px; padding: 0.9rem 1rem;
+  margin-top: 1rem; font-weight: 800; font-size: 1rem; display: flex; align-items: center; gap: 0.6rem;
+}
+.uf-preview .uf-value { font-family: 'JetBrains Mono', monospace; font-size: 1.3rem; }
+.uf-preview.uf-negative { color: var(--color-alert); }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <div class="app-page-head">
+    <div>
+      <p class="app-eyebrow">{{if .IsEditing}}{{"// แก้ไขบันทึก"}}{{else}}{{"// บันทึกใหม่"}}{{end}}</p>
+      <h1>{{if .IsEditing}}แก้ไขบันทึก CAPD{{else}}บันทึกข้อมูล CAPD รายรอบ{{end}}</h1>
+    </div>
+  </div>
+
+  {{if .Error}}<div class="error-banner">{{.Error}}</div>{{end}}
+
+  <form method="post" action="{{if .IsEditing}}/capd/{{.Log.ID}}/edit{{else}}/capd/new{{end}}" id="capdForm">
+    <section class="card form-panel">
+      <h2>ข้อมูลรอบน้ำยา</h2>
+      <div class="field-grid">
+        <div class="field">
+          <label>วันที่</label>
+          <input type="date" name="logDate" required value="{{if .Log}}{{formatDateInput .Log.LogDate}}{{else}}{{.Today}}{{end}}">
+        </div>
+        <div class="field">
+          <label>รอบที่</label>
+          <select name="cycleNumber" required>
+            <option value="1" {{if and .Log (eq .Log.CycleNumber 1)}}selected{{end}}>รอบที่ 1</option>
+            <option value="2" {{if and .Log (eq .Log.CycleNumber 2)}}selected{{end}}>รอบที่ 2</option>
+            <option value="3" {{if and .Log (eq .Log.CycleNumber 3)}}selected{{end}}>รอบที่ 3</option>
+            <option value="4" {{if and .Log (eq .Log.CycleNumber 4)}}selected{{end}}>รอบที่ 4</option>
+            <option value="5" {{if and .Log (eq .Log.CycleNumber 5)}}selected{{end}}>รอบที่ 5</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ความเข้มข้นเดกซ์โทรส (%)</label>
+          <select name="dextroseConcentration" id="dextroseSelect" required onchange="document.getElementById('dextroseOtherField').style.display = this.value === 'other' ? 'block' : 'none';">
+            {{range .DextroseConcentrationPresets}}
+            <option value="{{.}}" {{if eq . $.DextroseChoice}}selected{{end}}>{{.}}%</option>
+            {{end}}
+            <option value="other" {{if eq "other" $.DextroseChoice}}selected{{end}}>อื่นๆ - ระบุ</option>
+          </select>
+        </div>
+        <div class="field" id="dextroseOtherField" style="{{if ne .DextroseChoice "other"}}display:none;{{end}}">
+          <label>ระบุความเข้มข้น (%)</label>
+          <input type="number" name="dextroseConcentrationOther" min="0" step="0.01" value="{{.DextroseOtherValue}}">
+        </div>
+      </div>
+    </section>
+
+    <section class="card form-panel">
+      <h2>เติมน้ำยาเข้า (Fill)</h2>
+      <div class="field-grid">
+        <div class="field">
+          <label>เวลาเริ่มเติม</label>
+          <input type="time" name="fillStartTime" required value="{{if .Log}}{{.Log.FillStartTime}}{{end}}">
+        </div>
+        <div class="field">
+          <label>เวลาเติมเสร็จ</label>
+          <input type="time" name="fillEndTime" required value="{{if .Log}}{{.Log.FillEndTime}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ปริมาตรเติมเข้า (ml)</label>
+          <input type="number" name="fillVolumeMl" id="fillVolumeMl" min="0" required value="{{if .Log}}{{.Log.FillVolumeML}}{{end}}">
+        </div>
+      </div>
+    </section>
+
+    <section class="card form-panel">
+      <h2>ปล่อยน้ำยาออก (Drain)</h2>
+      <div class="field-grid">
+        <div class="field">
+          <label>เวลาเริ่มปล่อยออก</label>
+          <input type="time" name="drainStartTime" required value="{{if .Log}}{{.Log.DrainStartTime}}{{end}}">
+        </div>
+        <div class="field">
+          <label>เวลาปล่อยออกเสร็จ</label>
+          <input type="time" name="drainEndTime" required value="{{if .Log}}{{.Log.DrainEndTime}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ปริมาตรปล่อยออก (ml)</label>
+          <input type="number" name="drainVolumeMl" id="drainVolumeMl" min="0" required value="{{if .Log}}{{.Log.DrainVolumeML}}{{end}}">
+        </div>
+      </div>
+      <div class="uf-preview" id="ufPreview">
+        UF สุทธิโดยประมาณ: <span class="uf-value" id="ufPreviewValue">—</span> ml
+      </div>
+      <div class="field" style="margin-top:1rem;">
+        <label>ลักษณะน้ำยาที่ปล่อยออก</label>
+        <select name="dialysateAppearance" required>
+          <option value="" {{if not .Log}}selected{{end}} disabled>-- กรุณาเลือก --</option>
+          {{range .DialysateAppearanceOptions}}
+          <option value="{{.}}" {{if and $.Log (eq $.Log.DialysateAppearance .)}}selected{{end}}>{{appearanceLabel .}}</option>
+          {{end}}
+        </select>
+        <p class="field-hint">ต้องเลือกทุกครั้ง ไม่มีค่าเริ่มต้น เพื่อไม่ให้พลาดบันทึกกรณีน้ำยาผิดปกติ</p>
+      </div>
+    </section>
+
+    <section class="card form-panel">
+      <h2>สุขภาพประจำรอบ</h2>
+      <div class="field-grid">
+        <div class="field">
+          <label>น้ำหนัก (kg)</label>
+          <input type="number" name="weightKg" min="0" step="0.01" required value="{{if .Log}}{{printf "%.2f" .Log.WeightKG}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ความดันตัวบน (Systolic)</label>
+          <input type="number" name="bpSystolic" min="0" required value="{{if .Log}}{{.Log.BPSystolic}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ความดันตัวล่าง (Diastolic)</label>
+          <input type="number" name="bpDiastolic" min="0" required value="{{if .Log}}{{.Log.BPDiastolic}}{{end}}">
+        </div>
+        <div class="field">
+          <label>ปัสสาวะ (ml)</label>
+          <input type="number" name="urineOutputMl" min="0" value="{{if and .Log .Log.UrineOutputML}}{{deref .Log.UrineOutputML}}{{end}}">
+          <p class="field-hint">กรอกเฉพาะรอบสุดท้ายของวัน (ถ้ามี)</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" style="width:auto;">{{if .IsEditing}}อัปเดตบันทึก{{else}}บันทึกข้อมูล{{end}}</button>
+      <a class="btn" href="{{if .IsEditing}}/capd/logs{{else}}/capd{{end}}" style="width:auto;">ยกเลิก</a>
+    </div>
+  </form>
+
+  {{if .IsEditing}}
+  <form method="post" action="/capd/{{.Log.ID}}/delete" onsubmit="return confirm('ลบบันทึกนี้?');" style="margin-top:0.75rem;">
+    <button type="submit" class="btn btn-danger" style="width:auto;display:inline-block;">ลบบันทึกนี้</button>
+  </form>
+  {{end}}
+</main>
+
+<script>
+(function () {
+  var fillInput = document.getElementById('fillVolumeMl');
+  var drainInput = document.getElementById('drainVolumeMl');
+  var preview = document.getElementById('ufPreview');
+  var previewValue = document.getElementById('ufPreviewValue');
+
+  function updatePreview() {
+    var fill = parseFloat(fillInput.value);
+    var drain = parseFloat(drainInput.value);
+    if (isNaN(fill) || isNaN(drain)) {
+      previewValue.textContent = '—';
+      preview.classList.remove('uf-negative');
+      return;
+    }
+    var uf = drain - fill;
+    previewValue.textContent = (uf > 0 ? '+' : '') + uf;
+    preview.classList.toggle('uf-negative', uf <= 0);
+  }
+
+  fillInput.addEventListener('input', updatePreview);
+  drainInput.addEventListener('input', updatePreview);
+  updatePreview();
+})();
+</script>
+
+{{template "cookie-consent" .}}
+</body>
+</html>
