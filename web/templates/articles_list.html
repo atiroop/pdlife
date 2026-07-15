@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>บทความจากทีมงาน PDLife — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+<style>
+.articles-main { padding: 2rem 0 3rem; }
+.articles-wrap { max-width: 42rem; margin: 0 auto; }
+.articles-list-grid { display: flex; flex-direction: column; gap: 1.1rem; }
+.article-item-card { padding: 0; overflow: hidden; text-decoration: none; color: inherit; display: block; }
+.article-item-thumb { width: 100%; height: 14rem; object-fit: cover; display: block; }
+.article-item-thumb-placeholder {
+  width: 100%; height: 14rem; display: flex; align-items: center; justify-content: center;
+  background: var(--color-ink);
+}
+.article-item-thumb-placeholder img { height: 2.5rem; width: auto; opacity: 0.7; }
+.article-item-body { padding: 1.2rem 1.4rem; }
+.article-item-date { font-size: 0.8rem; opacity: 0.6; font-weight: 700; }
+.article-item-title { font-size: 1.15rem; margin: 0.4rem 0 0.6rem; }
+.article-item-excerpt { font-size: 0.92rem; opacity: 0.85; }
+.article-item-author { font-size: 0.82rem; opacity: 0.6; font-weight: 700; margin-top: 0.6rem; }
+.empty-state { padding: 2.5rem 1.5rem; text-align: center; }
+</style>
+</head>
+<body>
+{{template "site-header" .}}
+<main class="page-main articles-main">
+  <div class="wrap articles-wrap">
+    <p class="app-eyebrow" style="color:var(--color-brand); font-weight:800; font-size:0.75rem; letter-spacing:0.14em; margin-bottom:0.4rem;">// PDLife Editorial Articles</p>
+    <h1 style="margin-bottom:1.5rem;">บทความจากทีมงาน PDLife</h1>
+
+    {{if .Items}}
+    <div class="articles-list-grid">
+      {{range .Items}}
+      <a class="card article-item-card" href="/articles/{{.Slug}}">
+        {{if .CoverImageURL}}
+        <img src="{{deref .CoverImageURL}}" alt="" class="article-item-thumb" loading="lazy">
+        {{else}}
+        <div class="article-item-thumb-placeholder">
+          {{if logoURLDark}}<img src="{{logoURLDark}}" alt="pdlife.app">{{end}}
+        </div>
+        {{end}}
+        <div class="article-item-body">
+          <div class="article-item-date">{{if .PublishedAt}}{{formatDate (deref .PublishedAt)}}{{else}}ไม่ทราบวันที่{{end}}</div>
+          <div class="article-item-title">{{.Title}}</div>
+          <p class="article-item-excerpt">{{.ExcerptText}}</p>
+          <div class="article-item-author">โดย {{.AuthorName}}</div>
+        </div>
+      </a>
+      {{end}}
+    </div>
+    {{else}}
+    <div class="card empty-state">
+      <p>ยังไม่มีบทความเผยแพร่ในขณะนี้</p>
+    </div>
+    {{end}}
+  </div>
+</main>
+{{template "site-footer" .}}
+{{template "cookie-consent" .}}
+</body>
+</html>

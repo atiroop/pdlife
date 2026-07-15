@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{if .Article}}แก้ไขบทความ{{else}}เขียนบทความใหม่{{end}} — pdlife.app Admin</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+<style>
+.editor-wrap { max-width: 44rem; margin: 0 auto; }
+.field-label { display: block; font-weight: 700; margin-bottom: 0.4rem; }
+input[type="text"] {
+  width: 100%; font-family: 'Sarabun', sans-serif; font-size: 1.15rem; font-weight: 700;
+  padding: 0.75rem 0.9rem; border: var(--border); border-radius: var(--radius);
+  margin-bottom: 1.25rem; background: var(--color-surface); color: var(--color-ink);
+}
+.cover-upload-box {
+  border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+  background: var(--color-surface); padding: 1rem 1.1rem; margin-bottom: 1.5rem;
+}
+.cover-preview { width: 100%; max-height: 12rem; object-fit: cover; border-radius: 8px; margin-top: 0.75rem; display: none; }
+.cover-preview.show { display: block; }
+.cover-status { font-size: 0.85rem; font-weight: 700; margin-top: 0.5rem; opacity: 0.7; }
+
+#editor-container { margin-bottom: 1.25rem; }
+.ql-toolbar.ql-snow { border: var(--border); border-radius: var(--radius) var(--radius) 0 0; background: var(--color-surface); }
+.ql-container.ql-snow { border: var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); background: var(--color-surface); font-family: 'Sarabun', sans-serif; font-size: 1rem; min-height: 20rem; }
+.ql-editor { min-height: 20rem; line-height: 1.75; }
+.ql-editor img, .ql-editor video { max-width: 100%; border-radius: 8px; }
+
+.editor-status-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1.5rem; }
+.autosave-status { font-size: 0.85rem; opacity: 0.6; font-weight: 700; }
+.editor-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.editor-error { background: var(--color-alert-tint); border: var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; margin-bottom: 1.25rem; font-weight: 700; display: none; }
+.editor-error.show { display: block; }
+.status-pill { display: inline-block; font-weight: 800; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.25rem 0.7rem; border-radius: 999px; border: 2px solid var(--color-ink); margin-left: 0.6rem; vertical-align: middle; }
+.status-pill-published { background: var(--color-good); }
+.status-pill-draft { background: var(--color-watch-tint); }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <div class="editor-wrap">
+    <div class="app-page-head">
+      <div>
+        <p class="app-eyebrow">// PDLife Editorial Articles</p>
+        <h1>{{if .Article}}แก้ไขบทความ{{else}}เขียนบทความใหม่{{end}}{{if .Article}}<span class="status-pill status-pill-{{.Article.Status}}" id="status-pill">{{if eq (print .Article.Status) "published"}}เผยแพร่แล้ว{{else}}ฉบับร่าง{{end}}</span>{{end}}</h1>
+      </div>
+    </div>
+
+    <div class="editor-error" id="editor-error"></div>
+
+    <label class="field-label" for="title">ชื่อบทความ</label>
+    <input type="text" id="title" placeholder="ใส่ชื่อบทความ" value="{{if .Article}}{{.Article.Title}}{{end}}">
+
+    <div class="cover-upload-box">
+      <label class="field-label" for="cover-file-input">ภาพหน้าปก</label>
+      <input type="file" id="cover-file-input" accept="image/jpeg,image/png,image/webp">
+      <img id="cover-preview" class="cover-preview{{if .Article}}{{if .Article.CoverImageURL}} show{{end}}{{end}}" src="{{if .Article}}{{if .Article.CoverImageURL}}{{deref .Article.CoverImageURL}}{{end}}{{end}}" alt="">
+      <div class="cover-status" id="cover-status"></div>
+    </div>
+
+    <div id="editor-container">
+      <div id="editor-toolbar">
+        <span class="ql-formats">
+          <select class="ql-header"><option value="1"></option><option value="2"></option><option value="3"></option><option selected></option></select>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-bold"></button>
+          <button class="ql-italic"></button>
+          <button class="ql-underline"></button>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-list" value="ordered"></button>
+          <button class="ql-list" value="bullet"></button>
+        </span>
+        <span class="ql-formats">
+          <button class="ql-blockquote"></button>
+          <button class="ql-link"></button>
+          <button class="ql-image"></button>
+          <button class="ql-videoFile">🎬</button>
+        </span>
+      </div>
+      <div id="editor-body">{{if .Article}}{{.ContentHTMLSafe}}{{end}}</div>
+    </div>
+
+    <div class="editor-status-row">
+      <span class="autosave-status" id="autosave-status">&nbsp;</span>
+      <div class="editor-actions">
+        <button type="button" class="btn" id="save-draft-btn">บันทึกฉบับร่าง</button>
+        <button type="button" class="btn btn-primary" id="publish-btn">เผยแพร่</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script>
+(function () {
+  var articleId = {{if .Article}}{{.Article.ID}}{{else}}null{{end}};
+
+  // Quill's built-in "video" format embeds an <iframe> (for YouTube-style
+  // embeds) — we want direct-uploaded files rendered as <video controls>,
+  // so this registers a separate custom blot ("videoFile") instead of
+  // reusing/overriding Quill's own video format.
+  var BlockEmbed = Quill.import('blots/block/embed');
+  class VideoFileBlot extends BlockEmbed {
+    static create(url) {
+      const node = super.create();
+      node.setAttribute('src', url);
+      node.setAttribute('controls', 'controls');
+      node.setAttribute('preload', 'metadata');
+      return node;
+    }
+    static value(node) { return node.getAttribute('src'); }
+  }
+  VideoFileBlot.blotName = 'videoFile';
+  VideoFileBlot.tagName = 'video';
+  Quill.register(VideoFileBlot);
+
+  var quill = new Quill('#editor-body', {
+    theme: 'snow',
+    modules: {
+      toolbar: {
+        container: '#editor-toolbar',
+        handlers: { image: imageHandler, videoFile: videoFileHandler }
+      }
+    }
+  });
+
+  function uploadMedia(file, statusEl) {
+    if (statusEl) statusEl.textContent = 'กำลังอัปโหลด...';
+    var formData = new FormData();
+    formData.append('file', file);
+    return fetch('/admin/editorial/upload-media', { method: 'POST', body: formData })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (o) {
+        if (!o.ok || !o.data.url) { throw new Error(o.data.error || 'อัปโหลดไม่สำเร็จ'); }
+        if (statusEl) statusEl.textContent = '';
+        return o.data.url;
+      })
+      .catch(function (err) {
+        if (statusEl) statusEl.textContent = '';
+        showError(err.message);
+        throw err;
+      });
+  }
+
+  function imageHandler() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/webp';
+    input.onchange = function () {
+      var file = input.files[0];
+      if (!file) return;
+      uploadMedia(file, null).then(function (url) {
+        var range = quill.getSelection(true);
+        quill.insertEmbed(range.index, 'image', url, 'user');
+        quill.setSelection(range.index + 1);
+      }).catch(function () {});
+    };
+    input.click();
+  }
+
+  function videoFileHandler() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/mp4,video/webm';
+    input.onchange = function () {
+      var file = input.files[0];
+      if (!file) return;
+      uploadMedia(file, document.getElementById('autosave-status')).then(function (url) {
+        var range = quill.getSelection(true);
+        quill.insertEmbed(range.index, 'videoFile', url, 'user');
+        quill.setSelection(range.index + 1);
+      }).catch(function () {});
+    };
+    input.click();
+  }
+
+  // cover image
+  var coverInput = document.getElementById('cover-file-input');
+  var coverPreview = document.getElementById('cover-preview');
+  var coverStatus = document.getElementById('cover-status');
+  var coverImageUrl = coverPreview.getAttribute('src') || '';
+  coverInput.addEventListener('change', function () {
+    var file = coverInput.files[0];
+    if (!file) return;
+    uploadMedia(file, coverStatus).then(function (url) {
+      coverImageUrl = url;
+      coverPreview.src = url;
+      coverPreview.classList.add('show');
+      dirty = true;
+      scheduleAutosave();
+    }).catch(function () {});
+  });
+
+  function showError(msg) {
+    var el = document.getElementById('editor-error');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function clearError() {
+    var el = document.getElementById('editor-error');
+    el.classList.remove('show');
+    el.textContent = '';
+  }
+
+  var dirty = false;
+  var autosaveTimer = null;
+  quill.on('text-change', function () { dirty = true; scheduleAutosave(); });
+  document.getElementById('title').addEventListener('input', function () { dirty = true; scheduleAutosave(); });
+
+  function scheduleAutosave() {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(doAutosave, 30000);
+  }
+
+  function doAutosave() {
+    if (!dirty) return;
+    var title = document.getElementById('title').value.trim();
+    if (!title) return; // nothing worth saving yet
+    save('autosave').then(function (data) {
+      dirty = false;
+      if (!articleId && data.id) {
+        articleId = data.id;
+        window.history.replaceState(null, '', '/admin/editorial/' + articleId + '/edit');
+      }
+      var status = document.getElementById('autosave-status');
+      status.textContent = 'บันทึกฉบับร่างอัตโนมัติเมื่อ ' + new Date().toLocaleTimeString('th-TH');
+    }).catch(function () {});
+  }
+
+  function save(action) {
+    clearError();
+    var title = document.getElementById('title').value.trim();
+    if (!title) { showError('กรุณากรอกชื่อบทความ'); return Promise.reject(new Error('กรุณากรอกชื่อบทความ')); }
+    var body = JSON.stringify({
+      title: title,
+      content_html: quill.root.innerHTML,
+      cover_image_url: coverImageUrl,
+      action: action
+    });
+    var url = articleId ? ('/admin/editorial/' + articleId + '/edit') : '/admin/editorial/new';
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) { throw new Error(data.error || 'บันทึกไม่สำเร็จ'); }
+          return data;
+        });
+      })
+      .catch(function (err) { showError(err.message); throw err; });
+  }
+
+  document.getElementById('save-draft-btn').addEventListener('click', function () {
+    save('draft').then(function (data) {
+      dirty = false;
+      articleId = data.id;
+      window.history.replaceState(null, '', '/admin/editorial/' + articleId + '/edit');
+      var status = document.getElementById('autosave-status');
+      status.textContent = 'บันทึกฉบับร่างแล้วเมื่อ ' + new Date().toLocaleTimeString('th-TH');
+    }).catch(function () {});
+  });
+
+  document.getElementById('publish-btn').addEventListener('click', function () {
+    if (!window.confirm('ยืนยันเผยแพร่บทความนี้?')) return;
+    save('publish').then(function () {
+      window.location.href = '/admin/editorial';
+    }).catch(function () {});
+  });
+
+  window.addEventListener('beforeunload', function (e) {
+    if (dirty) { e.preventDefault(); e.returnValue = ''; }
+  });
+})();
+</script>
+
+{{template "cookie-consent" .}}
+</body>
+</html>

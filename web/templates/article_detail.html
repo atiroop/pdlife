@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Article.Title}} — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+<style>
+.article-main { padding: 2rem 0 3rem; }
+.article-wrap { max-width: 42rem; margin: 0 auto; }
+.article-cover { width: 100%; max-height: 24rem; object-fit: cover; border-radius: var(--radius); border: var(--border); box-shadow: var(--shadow); margin-bottom: 1.5rem; display: block; }
+.article-meta { font-size: 0.85rem; opacity: 0.65; font-weight: 700; margin-bottom: 0.6rem; }
+.article-title { font-size: 1.8rem; margin-bottom: 1.5rem; line-height: 1.35; }
+.article-body { font-size: 1.02rem; line-height: 1.8; }
+.article-body h1 { font-size: 1.5rem; margin: 1.75rem 0 0.75rem; }
+.article-body h2 { font-size: 1.3rem; margin: 1.75rem 0 0.75rem; }
+.article-body h3 { font-size: 1.15rem; margin: 1.5rem 0 0.6rem; }
+.article-body h4 { font-size: 1.05rem; margin: 1.5rem 0 0.6rem; }
+.article-body p { margin-bottom: 1.1rem; }
+.article-body ul, .article-body ol { margin: 0 0 1.1rem 1.4rem; }
+.article-body li { margin-bottom: 0.4rem; }
+.article-body a { color: var(--color-brand); font-weight: 700; text-decoration: underline; }
+.article-body blockquote {
+  border-left: 4px solid var(--color-brand); padding: 0.4rem 0 0.4rem 1.1rem; margin: 1.5rem 0;
+  opacity: 0.85; font-style: italic;
+}
+.article-body img, .article-body video { max-width: 100%; border-radius: 8px; margin: 1.25rem 0; display: block; }
+.article-back { display: inline-block; margin-top: 2.5rem; font-weight: 700; color: var(--color-ink); }
+</style>
+</head>
+<body>
+{{template "site-header" .}}
+<main class="page-main article-main">
+  <div class="wrap article-wrap">
+    {{if .Article.CoverImageURL}}
+    <img src="{{deref .Article.CoverImageURL}}" alt="" class="article-cover" loading="lazy">
+    {{end}}
+    <div class="article-meta">{{if .Article.PublishedAt}}{{formatDate (deref .Article.PublishedAt)}}{{else}}ไม่ทราบวันที่{{end}} · โดย {{.AuthorName}}</div>
+    <h1 class="article-title">{{.Article.Title}}</h1>
+    <div class="article-body">{{.ContentHTMLSafe}}</div>
+    <a class="article-back" href="/articles">← กลับไปหน้าบทความทั้งหมด</a>
+  </div>
+</main>
+{{template "site-footer" .}}
+{{template "cookie-consent" .}}
+</body>
+</html>
