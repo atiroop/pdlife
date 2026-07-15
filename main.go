@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -66,14 +68,25 @@ func main() {
 			}
 			return m, nil
 		},
-		"formatDate": func(t time.Time) string {
-			thaiMonths := []string{"", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."}
-			return fmt.Sprintf("%d %s %d", t.Day(), thaiMonths[int(t.Month())], t.Year()+543)
-		},
+		"formatDate":      handler.FormatDateThai,
 		"formatDateInput": func(t time.Time) string { return t.Format("2006-01-02") },
+		"fmtNutrient": func(v *float64) string {
+			if v == nil {
+				return "-"
+			}
+			s := strconv.FormatFloat(*v, 'f', 1, 64)
+			s = strings.TrimSuffix(s, ".0")
+			return s
+		},
+		"appearanceLabel": handler.DialysateAppearanceLabel,
 		"deref": func(p interface{}) interface{} {
 			switch v := p.(type) {
 			case *int:
+				if v == nil {
+					return nil
+				}
+				return *v
+			case *float64:
 				if v == nil {
 					return nil
 				}
@@ -83,37 +96,46 @@ func main() {
 					return nil
 				}
 				return *v
+			case *time.Time:
+				if v == nil {
+					return nil
+				}
+				return *v
 			default:
 				return p
 			}
 		},
+		"labFlagLabel":      handler.LabFlagLabel,
+		"labFlagShortLabel": handler.LabFlagShortLabel,
+		"labFlagSelected":   handler.LabFlagSelected,
 	}
 	e.Renderer = &templateRenderer{
 		templates: template.Must(template.New("").Funcs(funcs).ParseFS(templateFS, "web/templates/*.html")),
 	}
 
-	e.GET("/", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "index.html", nil)
-	})
+	e.GET("/", authHandler.LandingPage)
 	e.GET("/dashboard-preview", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "dashboard_preview.html", mockDashboardData())
 	})
 	e.GET("/terms", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "legal_page.html", map[string]string{
-			"Title":       "เงื่อนไขการใช้งาน",
-			"Placeholder": "เนื้อหาเงื่อนไขการใช้งานฉบับเต็มอยู่ระหว่างจัดทำ จะเผยแพร่ที่นี่เมื่อพร้อม",
+			"Title":        "เงื่อนไขการใช้งาน",
+			"ContentBlock": "legal-content-terms",
+			"UpdatedDate":  handler.LegalContentUpdatedDate,
 		})
 	})
 	e.GET("/privacy", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "legal_page.html", map[string]string{
-			"Title":       "นโยบายความเป็นส่วนตัว",
-			"Placeholder": "เนื้อหานโยบายความเป็นส่วนตัวฉบับเต็มอยู่ระหว่างจัดทำ จะเผยแพร่ที่นี่เมื่อพร้อม",
+			"Title":        "นโยบายความเป็นส่วนตัว",
+			"ContentBlock": "legal-content-privacy",
+			"UpdatedDate":  handler.LegalContentUpdatedDate,
 		})
 	})
 	e.GET("/cookie-policy", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "legal_page.html", map[string]string{
-			"Title":       "นโยบายคุกกี้",
-			"Placeholder": "เนื้อหานโยบายคุกกี้ฉบับเต็มอยู่ระหว่างจัดทำ จะเผยแพร่ที่นี่เมื่อพร้อม",
+			"Title":        "นโยบายคุกกี้",
+			"ContentBlock": "legal-content-cookie",
+			"UpdatedDate":  handler.LegalContentUpdatedDate,
 		})
 	})
 
@@ -190,6 +212,9 @@ func main() {
 	e.POST("/resend-verification", authHandler.ResendVerification, resendLimiter)
 	e.GET("/onboarding", authHandler.OnboardingForm)
 	e.POST("/onboarding", authHandler.OnboardingSubmit)
+	e.GET("/consent", authHandler.ConsentForm)
+	e.POST("/consent", authHandler.ConsentSubmit)
+	e.POST("/consent/withdraw", authHandler.WithdrawConsent)
 
 	e.GET("/login", authHandler.LoginForm)
 	e.POST("/login", authHandler.Login, loginLimiter)
@@ -199,6 +224,15 @@ func main() {
 	e.GET("/reset-password", authHandler.ResetPasswordForm)
 	e.POST("/reset-password", authHandler.ResetPassword)
 
+	e.GET("/dashboard", authHandler.Dashboard)
+	e.GET("/news", authHandler.NewsList)
+	e.GET("/profile", authHandler.ProfileForm)
+	e.POST("/profile/name", authHandler.ProfileUpdateName)
+	e.POST("/profile/password", authHandler.ProfileChangePassword)
+	e.POST("/profile/treatment", authHandler.ProfileUpdateTreatment)
+	e.GET("/profile/export-data", authHandler.ProfileExportData)
+	e.POST("/profile/delete-account", authHandler.ProfileDeleteAccount)
+
 	e.GET("/apd", authHandler.ApdDashboard)
 	e.GET("/apd/logs", authHandler.ApdLogsList)
 	e.GET("/apd/new", authHandler.ApdNewForm)
@@ -207,6 +241,57 @@ func main() {
 	e.POST("/apd/:id/edit", authHandler.ApdUpdate)
 	e.POST("/apd/:id/delete", authHandler.ApdDelete)
 	e.GET("/apd/export", authHandler.ApdExport)
+
+	e.GET("/capd", authHandler.CapdDashboard)
+	e.GET("/capd/logs", authHandler.CapdLogsList)
+	e.GET("/capd/new", authHandler.CapdNewForm)
+	e.POST("/capd/new", authHandler.CapdCreate)
+	e.GET("/capd/:id/edit", authHandler.CapdEditForm)
+	e.POST("/capd/:id/edit", authHandler.CapdUpdate)
+	e.POST("/capd/:id/delete", authHandler.CapdDelete)
+
+	e.GET("/hd", authHandler.HdDashboard)
+	e.GET("/hd/logs", authHandler.HdLogsList)
+	e.GET("/hd/new", authHandler.HdNewForm)
+	e.POST("/hd/new", authHandler.HdCreate)
+	e.GET("/hd/:id/edit", authHandler.HdEditForm)
+	e.POST("/hd/:id/edit", authHandler.HdUpdate)
+	e.POST("/hd/:id/delete", authHandler.HdDelete)
+
+	e.GET("/lab-results", authHandler.LabResultsList)
+	e.GET("/lab-results/new", authHandler.LabResultsNewForm)
+	e.POST("/lab-results/new", authHandler.LabResultsCreate)
+	e.GET("/lab-results/:id/edit", authHandler.LabResultsEditForm)
+	e.POST("/lab-results/:id/edit", authHandler.LabResultsUpdate)
+	e.POST("/lab-results/:id/delete", authHandler.LabResultsDelete)
+
+	e.GET("/food-check", authHandler.FoodCheckSearch)
+	e.GET("/food-check/results", authHandler.FoodCheckSearchResults)
+	e.GET("/food-check/food/:source/:ref", authHandler.FoodCheckDetail)
+	e.GET("/food-check/food/:source/:ref/nutrition", authHandler.FoodCheckNutrition)
+
+	e.GET("/admin/content-queue", authHandler.AdminContentQueue)
+	e.POST("/admin/content-queue/:id/approve", authHandler.AdminApproveContent)
+	e.POST("/admin/content-queue/:id/reject", authHandler.AdminRejectContent)
+	e.POST("/admin/content-queue/:id/regenerate-image", authHandler.AdminRegenerateImage)
+
+	e.GET("/admin/editorial", authHandler.EditorialList)
+	e.GET("/admin/editorial/new", authHandler.EditorialNewForm)
+	e.POST("/admin/editorial/new", authHandler.EditorialCreate)
+	e.GET("/admin/editorial/:id/edit", authHandler.EditorialEditForm)
+	e.POST("/admin/editorial/:id/edit", authHandler.EditorialUpdate)
+	e.POST("/admin/editorial/:id/delete", authHandler.EditorialDelete)
+	e.POST("/admin/editorial/upload-media", authHandler.EditorialUploadMedia)
+
+	e.GET("/admin/users", authHandler.AdminUsersList)
+	e.GET("/admin/users/:id", authHandler.AdminUserDetail)
+	e.POST("/admin/users/:id/verify-email", authHandler.AdminVerifyEmail)
+	e.POST("/admin/users/:id/unlock", authHandler.AdminUnlockAccount)
+	e.POST("/admin/users/:id/suspend", authHandler.AdminSuspendAccount)
+	e.POST("/admin/users/:id/unsuspend", authHandler.AdminUnsuspendAccount)
+
+	e.GET("/articles", authHandler.ArticlesList)
+	e.GET("/articles/:slug", authHandler.ArticleDetail)
 
 	e.GET("/healthz", func(c echo.Context) error {
 		sqlDB, err := db.DB()
