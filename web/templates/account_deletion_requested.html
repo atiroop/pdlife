@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ขอลบบัญชีสำเร็จ — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+<style>
+.deletion-main { padding: 2rem 1.25rem 3rem; }
+.deletion-card { max-width: 28rem; margin: 2rem auto 0; padding: 2rem 1.75rem; text-align: center; }
+.deletion-card h1 { font-size: 1.4rem; margin-bottom: 0.9rem; }
+.deletion-card p { line-height: 1.7; margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+{{template "site-header" .}}
+<main class="page-main deletion-main">
+  <div class="card deletion-card">
+    <h1>รับคำขอลบบัญชีแล้ว</h1>
+    <p>บัญชีของคุณจะถูกลบถาวรภายในวันที่ <strong>{{.PurgeDate}}</strong></p>
+    <p>เราได้ส่งอีเมลยืนยันไปยังอีเมลที่ลงทะเบียนไว้แล้ว หากต้องการยกเลิกคำขอนี้ กรุณาติดต่อทีมงานภายในระยะเวลาดังกล่าว</p>
+    <a class="btn btn-primary" href="/" style="display:inline-block;width:auto;">กลับหน้าแรก</a>
+  </div>
+</main>
+{{template "site-footer" .}}
+{{template "cookie-consent" .}}
+</body>
+</html>

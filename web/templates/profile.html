@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>จัดการโปรไฟล์ — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+{{template "app-shell-css" .}}
+<style>
+.profile-wrap { max-width: 34rem; margin: 0 auto; }
+.profile-section { margin-bottom: 1.75rem; padding: 1.4rem 1.5rem; }
+.profile-section h2 { font-size: 1.1rem; margin-bottom: 1rem; }
+.profile-section h2 .section-note { font-weight: 400; font-size: 0.82rem; opacity: 0.6; display: block; margin-top: 0.2rem; }
+
+.field-label { display: block; font-weight: 700; margin-bottom: 0.4rem; font-size: 0.92rem; }
+input[type="text"], input[type="password"], select {
+  width: 100%; font-family: 'Sarabun', sans-serif; font-size: 1rem;
+  padding: 0.7rem 0.85rem; border: var(--border); border-radius: var(--radius);
+  margin-bottom: 1rem; background: var(--color-surface); color: var(--color-ink);
+}
+.readonly-field {
+  padding: 0.7rem 0.85rem; border: 2px solid rgba(21,21,22,0.2); border-radius: var(--radius);
+  margin-bottom: 0.4rem; background: var(--color-paper); color: var(--color-ink); opacity: 0.75;
+}
+.field-hint { font-size: 0.8rem; opacity: 0.6; margin: -0.6rem 0 1rem; }
+
+.banner { border: var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; margin-bottom: 1.25rem; font-weight: 700; }
+.banner-success { background: var(--color-good); }
+.banner-error { background: var(--color-alert-tint); }
+
+.card-radio { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.card-option {
+  display: block; padding: 0.85rem 1rem; margin-bottom: 0.7rem;
+  border: 3px solid var(--color-ink); border-radius: 10px; box-shadow: 4px 4px 0 var(--color-ink);
+  background: var(--color-surface); cursor: pointer;
+}
+.card-radio:checked + .card-option { border-color: var(--color-brand); box-shadow: 4px 4px 0 var(--color-brand); }
+.card-option strong { display: block; font-family: 'Anuphan', sans-serif; font-size: 1rem; }
+.card-option span { font-size: 0.85rem; opacity: 0.75; }
+
+.consent-status-box {
+  border: 2px solid rgba(21,21,22,0.15); border-radius: 8px; padding: 0.9rem 1rem;
+  margin-bottom: 1rem; font-size: 0.9rem; background: #FBF9FF;
+}
+.consent-status-box.no-consent { background: var(--color-alert-tint); border-color: transparent; }
+.consent-status-box p { margin: 0.2rem 0; }
+
+.pdpa-actions { display: flex; flex-direction: column; gap: 0.75rem; }
+.btn-danger { background: var(--color-alert); color: #fff; }
+
+dialog {
+  border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 1.5rem; max-width: 26rem; width: calc(100vw - 3rem);
+}
+dialog::backdrop { background: rgba(21,21,22,0.55); }
+dialog h3 { font-size: 1.1rem; margin-bottom: 0.75rem; }
+dialog p { font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.1rem; }
+dialog .dialog-actions { display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+{{template "app-header" .}}
+
+<main class="app-main">
+  <div class="profile-wrap">
+    <div class="app-page-head">
+      <div>
+        <p class="app-eyebrow">// บัญชีของฉัน</p>
+        <h1>จัดการโปรไฟล์</h1>
+      </div>
+    </div>
+
+    {{if .Success}}<div class="banner banner-success">{{.Success}}</div>{{end}}
+    {{if .Error}}<div class="banner banner-error">{{.Error}}</div>{{end}}
+
+    <!-- 2.1 ข้อมูลส่วนตัว -->
+    <div class="card profile-section">
+      <h2>ข้อมูลส่วนตัว</h2>
+      <form method="POST" action="/profile/name">
+        <label class="field-label" for="nickname">ชื่อ</label>
+        <input type="text" id="nickname" name="nickname" value="{{.User.Nickname}}" required>
+        <label class="field-label">อีเมล</label>
+        <div class="readonly-field">{{.User.Email}}</div>
+        <p class="field-hint">ติดต่อทีมงานหากต้องการเปลี่ยนอีเมล</p>
+        <button type="submit" class="btn btn-primary">บันทึกชื่อ</button>
+      </form>
+    </div>
+
+    <!-- 2.2 เปลี่ยนรหัสผ่าน -->
+    <div class="card profile-section">
+      <h2>เปลี่ยนรหัสผ่าน</h2>
+      <form method="POST" action="/profile/password" id="password-form">
+        <label class="field-label" for="current_password">รหัสผ่านปัจจุบัน</label>
+        <input type="password" id="current_password" name="current_password" required>
+        <label class="field-label" for="new_password">รหัสผ่านใหม่</label>
+        <input type="password" id="new_password" name="new_password" required minlength="10">
+        <p class="field-hint">อย่างน้อย 10 ตัวอักษร มีทั้งตัวอักษรและตัวเลข</p>
+        <label class="field-label" for="confirm_password">ยืนยันรหัสผ่านใหม่</label>
+        <input type="password" id="confirm_password" name="confirm_password" required minlength="10">
+        <button type="submit" class="btn btn-primary">เปลี่ยนรหัสผ่าน</button>
+      </form>
+    </div>
+
+    <!-- 2.3 ข้อมูลการรักษา -->
+    <div class="card profile-section">
+      <h2>ข้อมูลการรักษา</h2>
+      <form method="POST" action="/profile/treatment" id="treatment-form">
+        <input type="hidden" id="original-treatment-type" value="{{.TreatmentType}}">
+
+        <input type="radio" name="treatment_type" value="CAPD" id="tt-capd" class="card-radio" {{if eq .TreatmentType "CAPD"}}checked{{end}}>
+        <label for="tt-capd" class="card-option">
+          <strong>CAPD</strong>
+          <span>ล้างไตทางช่องท้องแบบต่อเนื่อง</span>
+        </label>
+
+        <input type="radio" name="treatment_type" value="APD" id="tt-apd" class="card-radio" {{if eq .TreatmentType "APD"}}checked{{end}}>
+        <label for="tt-apd" class="card-option">
+          <strong>APD</strong>
+          <span>ล้างไตทางช่องท้องด้วยเครื่องอัตโนมัติ</span>
+        </label>
+
+        <input type="radio" name="treatment_type" value="HD" id="tt-hd" class="card-radio" {{if eq .TreatmentType "HD"}}checked{{end}}>
+        <label for="tt-hd" class="card-option">
+          <strong>HD</strong>
+          <span>ฟอกเลือดด้วยเครื่องไตเทียม</span>
+        </label>
+
+        <label class="field-label" for="coverage_type">สิทธิการรักษา</label>
+        <select id="coverage_type" name="coverage_type" required>
+          <option value="">— เลือกสิทธิการรักษา —</option>
+          <option value="บัตรทอง" {{if eq .CoverageType "บัตรทอง"}}selected{{end}}>บัตรทอง</option>
+          <option value="ประกันสังคม" {{if eq .CoverageType "ประกันสังคม"}}selected{{end}}>ประกันสังคม</option>
+          <option value="ข้าราชการ" {{if eq .CoverageType "ข้าราชการ"}}selected{{end}}>ข้าราชการ</option>
+          <option value="อื่นๆ" {{if eq .CoverageType "อื่นๆ"}}selected{{end}}>อื่นๆ</option>
+        </select>
+
+        <label class="field-label" for="hospital_name">โรงพยาบาลที่รักษา</label>
+        <input type="text" id="hospital_name" name="hospital_name" value="{{.HospitalName}}" required>
+
+        <button type="submit" class="btn btn-primary">บันทึกข้อมูลการรักษา</button>
+      </form>
+    </div>
+
+    <!-- 2.4 สถานะความยินยอมข้อมูลสุขภาพ -->
+    <div class="card profile-section">
+      <h2>สถานะความยินยอมข้อมูลสุขภาพ</h2>
+      {{if .HasConsent}}
+      <div class="consent-status-box">
+        <p><strong>ยินยอมแล้ว</strong> เมื่อ {{.ConsentAt}}</p>
+        {{if .ConsentVersion}}<p>ภายใต้นโยบายความเป็นส่วนตัวฉบับ {{.ConsentVersion}}</p>{{end}}
+      </div>
+      <form method="POST" action="/consent/withdraw" onsubmit="return confirm('ถอนความยินยอมแล้วจะไม่สามารถใช้งานสมุดบันทึกการรักษาและ Food Check ได้จนกว่าจะยินยอมใหม่ ยืนยันถอนความยินยอม?');">
+        <button type="submit" class="btn">ถอนความยินยอม</button>
+      </form>
+      {{else}}
+      <div class="consent-status-box no-consent">
+        <p><strong>ยังไม่ได้ยินยอม</strong> — ไม่สามารถใช้งานสมุดบันทึกการรักษาและ Food Check ได้</p>
+      </div>
+      <a class="btn btn-primary" href="/consent" style="display:inline-block;width:auto;">ยืนยันความยินยอม →</a>
+      {{end}}
+    </div>
+
+    <!-- 2.5 สิทธิ์ข้อมูลส่วนบุคคล (PDPA) -->
+    <div class="card profile-section">
+      <h2>สิทธิ์ข้อมูลส่วนบุคคล
+        <span class="section-note">ตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล (PDPA)</span>
+      </h2>
+      <div class="pdpa-actions">
+        <a class="btn" href="/profile/export-data" style="display:inline-block;width:auto;">ดาวน์โหลดข้อมูลของฉัน</a>
+        <button type="button" class="btn btn-danger" id="open-delete-dialog" style="width:auto;">ขอลบบัญชี</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Treatment-type-change confirm dialog -->
+<dialog id="treatment-confirm-dialog">
+  <h3>ยืนยันการเปลี่ยนวิธีการรักษา</h3>
+  <p id="treatment-confirm-message"></p>
+  <div class="dialog-actions">
+    <button type="button" class="btn" id="treatment-confirm-cancel">ยกเลิก</button>
+    <button type="button" class="btn btn-primary" id="treatment-confirm-ok">ยืนยัน</button>
+  </div>
+</dialog>
+
+<!-- Delete-account confirm dialog -->
+<dialog id="delete-account-dialog">
+  <h3>ยืนยันการลบบัญชี</h3>
+  <p>บัญชีและข้อมูลของคุณจะถูกลบถาวรใน 90 วัน กรุณากรอกรหัสผ่านและพิมพ์คำว่า "{{.DeleteAccountConfirmPhrase}}" เพื่อยืนยัน</p>
+  <form method="POST" action="/profile/delete-account">
+    <label class="field-label" for="delete_password">รหัสผ่านปัจจุบัน</label>
+    <input type="password" id="delete_password" name="password" required>
+    <label class="field-label" for="delete_confirm_text">พิมพ์ "{{.DeleteAccountConfirmPhrase}}"</label>
+    <input type="text" id="delete_confirm_text" name="confirm_text" required autocomplete="off">
+    <div class="dialog-actions">
+      <button type="button" class="btn" id="delete-dialog-cancel">ยกเลิก</button>
+      <button type="submit" class="btn btn-danger">ขอลบบัญชี</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  // ---- treatment-type change confirm ----
+  var treatmentForm = document.getElementById('treatment-form');
+  var originalTreatment = document.getElementById('original-treatment-type').value;
+  var treatmentDialog = document.getElementById('treatment-confirm-dialog');
+  var treatmentMessage = document.getElementById('treatment-confirm-message');
+  var pendingSubmit = false;
+
+  var treatmentLabels = { CAPD: 'CAPD', APD: 'APD', HD: 'HD' };
+
+  treatmentForm.addEventListener('submit', function (e) {
+    if (pendingSubmit) { pendingSubmit = false; return; }
+    var selected = treatmentForm.querySelector('input[name="treatment_type"]:checked');
+    var newValue = selected ? selected.value : '';
+    if (!newValue || newValue === originalTreatment) return; // no treatment_type change, submit normally
+
+    e.preventDefault();
+    var msg = 'เมนูจะเปลี่ยนเป็น ' + treatmentLabels[newValue] + ' ของฉัน ข้อมูลเดิมจะไม่ถูกลบ แต่จะไม่แสดงในเมนูหลักอีก ต้องการดำเนินการต่อหรือไม่';
+    treatmentMessage.textContent = msg;
+    treatmentDialog.showModal();
+  });
+
+  document.getElementById('treatment-confirm-ok').addEventListener('click', function () {
+    treatmentDialog.close();
+    pendingSubmit = true;
+    treatmentForm.requestSubmit();
+  });
+  document.getElementById('treatment-confirm-cancel').addEventListener('click', function () {
+    treatmentDialog.close();
+  });
+
+  // ---- password change confirm ----
+  document.getElementById('password-form').addEventListener('submit', function (e) {
+    if (!window.confirm('ยืนยันเปลี่ยนรหัสผ่าน? อุปกรณ์อื่นที่เคยเข้าสู่ระบบไว้จะต้องเข้าสู่ระบบใหม่')) {
+      e.preventDefault();
+    }
+  });
+
+  // ---- delete-account dialog ----
+  var deleteDialog = document.getElementById('delete-account-dialog');
+  document.getElementById('open-delete-dialog').addEventListener('click', function () {
+    deleteDialog.showModal();
+  });
+  document.getElementById('delete-dialog-cancel').addEventListener('click', function () {
+    deleteDialog.close();
+  });
+})();
+</script>
+
+{{template "cookie-consent" .}}
+</body>
+</html>

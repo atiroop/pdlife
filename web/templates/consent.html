@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ยินยอมการใช้ข้อมูลสุขภาพ — pdlife.app</title>
+<link rel="icon" href="https://cdn.pdlife.app/general/pdlife-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+{{template "theme-css" .}}
+<style>
+.consent-main { padding: 2rem 1.25rem 3rem; }
+.wrap-narrow { max-width: 30rem; margin: 0 auto; }
+.form-head { margin-bottom: 1.5rem; }
+.form-head h1 { font-size: 1.5rem; }
+.form-head p { color: var(--color-ink); margin-top: 0.5rem; line-height: 1.6; }
+.error-box {
+  background: var(--color-alert-tint); border: 3px solid var(--color-ink); border-radius: 10px;
+  padding: 0.9rem 1rem; margin-bottom: 1.25rem; font-weight: 700;
+}
+.consent-box {
+  border: 3px solid var(--color-ink); border-radius: 10px; box-shadow: 4px 4px 0 var(--color-ink);
+  background: var(--color-surface); padding: 1.1rem 1.15rem; margin-bottom: 1.5rem;
+}
+.checkbox-row { display: flex; align-items: flex-start; gap: 0.65rem; }
+.checkbox-row input[type="checkbox"] { width: 1.35rem; height: 1.35rem; margin-top: 0.15rem; flex-shrink: 0; }
+.checkbox-row span { font-size: 1rem; line-height: 1.65; }
+.checkbox-row a { color: var(--color-brand); font-weight: 700; text-decoration: underline; }
+.submit-row { margin-top: 0.25rem; }
+</style>
+</head>
+<body>
+{{template "site-header" .}}
+
+<main class="page-main consent-main">
+<div class="wrap-narrow">
+  <div class="form-head">
+    <h1>ยินยอมการใช้ข้อมูลสุขภาพ</h1>
+    <p>ก่อนใช้งานสมุดบันทึกการรักษาและ Food Check ต่อ กรุณายืนยันความยินยอมให้เราเก็บและประมวลผลข้อมูลสุขภาพของท่านตามนโยบายความเป็นส่วนตัวฉบับล่าสุด</p>
+  </div>
+
+  {{if .Error}}<div class="error-box">{{.Error}}</div>{{end}}
+
+  <form method="POST" action="/consent">
+    <div class="consent-box">
+      <label class="checkbox-row">
+        <input type="checkbox" name="health_data_consent" required>
+        <span>ข้าพเจ้ายินยอมให้ pdlife.app เก็บและประมวลผลข้อมูลสุขภาพของข้าพเจ้า (น้ำหนัก ความดัน บันทึกการล้างไต ฯลฯ) เพื่อการใช้งานฟีเจอร์บันทึกการรักษา ตามที่ระบุใน<a href="/privacy" target="_blank" rel="noopener">นโยบายความเป็นส่วนตัว</a></span>
+      </label>
+    </div>
+
+    <div class="submit-row">
+      <button type="submit" class="btn btn-primary">ยืนยันความยินยอม</button>
+    </div>
+  </form>
+</div>
+</main>
+
+{{template "site-footer" .}}
+{{template "cookie-consent" .}}
+</body>
+</html>
