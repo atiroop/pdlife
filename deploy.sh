@@ -13,7 +13,12 @@
 # Rollback: the binary being replaced is kept as ${BIN_NAME}.prev on the
 # server, so undoing a bad deploy is
 #   ssh myserver 'cd /home/pdlife/web/pdlife.app/public_html && \
-#     mv pdlife.prev pdlife && systemctl restart pdlife'
+#     cp -p pdlife.prev pdlife && systemctl restart pdlife'
+# cp, NOT mv: this command acts immediately and silently, and with mv a
+# second (accidental) run finds no .prev and the safety net is gone — that
+# exact sequence has happened. With cp it is idempotent. Only use it when
+# the site is actually broken after a deploy; otherwise report the problem
+# first.
 
 set -euo pipefail
 
@@ -72,9 +77,10 @@ ssh "$DEPLOY_HOST" "chmod +x ${REMOTE_DIR}/${BIN_NAME}.new && \
 
 rollback() {
   echo "!!! Smoke test failed — rolling back to the previous binary" >&2
+  # cp keeps .prev in place so a rollback can be repeated (see header note).
   ssh "$DEPLOY_HOST" "cd ${REMOTE_DIR} && \
     if [ -f ${BIN_NAME}.prev ]; then \
-      mv ${BIN_NAME}.prev ${BIN_NAME} && systemctl restart ${SERVICE_NAME}; \
+      cp -p ${BIN_NAME}.prev ${BIN_NAME} && systemctl restart ${SERVICE_NAME}; \
     else \
       echo 'no .prev binary to roll back to — service left as is' >&2; exit 1; \
     fi"
