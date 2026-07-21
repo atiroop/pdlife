@@ -384,6 +384,7 @@ func newServer(cfg *config.Config, db *gorm.DB, m *mailer.Mailer, rateLimit bool
 	authed.GET("/capd/:id/edit", authHandler.CapdEditForm)
 	authed.POST("/capd/:id/edit", authHandler.CapdUpdate)
 	authed.POST("/capd/:id/delete", authHandler.CapdDelete)
+	authed.GET("/capd/export", authHandler.CapdExport)
 
 	authed.GET("/hd", authHandler.HdDashboard)
 	authed.GET("/hd/logs", authHandler.HdLogsList)
@@ -392,6 +393,7 @@ func newServer(cfg *config.Config, db *gorm.DB, m *mailer.Mailer, rateLimit bool
 	authed.GET("/hd/:id/edit", authHandler.HdEditForm)
 	authed.POST("/hd/:id/edit", authHandler.HdUpdate)
 	authed.POST("/hd/:id/delete", authHandler.HdDelete)
+	authed.GET("/hd/export", authHandler.HdExport)
 
 	authed.GET("/lab-results", authHandler.LabResultsList)
 	authed.GET("/lab-results/new", authHandler.LabResultsNewForm)
@@ -399,6 +401,7 @@ func newServer(cfg *config.Config, db *gorm.DB, m *mailer.Mailer, rateLimit bool
 	authed.GET("/lab-results/:id/edit", authHandler.LabResultsEditForm)
 	authed.POST("/lab-results/:id/edit", authHandler.LabResultsUpdate)
 	authed.POST("/lab-results/:id/delete", authHandler.LabResultsDelete)
+	authed.GET("/lab-results/export", authHandler.LabResultsExport)
 
 	authed.GET("/food-check", authHandler.FoodCheckSearch)
 	authed.GET("/food-check/results", authHandler.FoodCheckSearchResults)

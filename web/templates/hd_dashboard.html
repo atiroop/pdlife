@@ -24,7 +24,7 @@
 .trend-empty { height: 10rem; display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(21,21,22,0.2); border-radius: 8px; font-weight: 700; opacity: 0.6; font-size: 0.9rem; }
 
 .toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.25rem; }
-.range-toggle, .log-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.range-toggle, .export-actions, .log-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .range-toggle a {
   font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.9rem; border-radius: 999px;
   border: 2px solid var(--color-ink); text-decoration: none; color: var(--color-ink);
@@ -61,6 +61,10 @@
       <div class="log-actions">
         <a class="toolbar-btn toolbar-btn-primary" href="/hd/new">+ บันทึกใหม่</a>
         <a class="toolbar-btn" href="/hd/logs">ดูบันทึกทั้งหมด</a>
+      </div>
+      <div class="export-actions">
+        <a class="toolbar-btn" href="/hd/export?format=xlsx&days={{.Days}}">Export Excel</a>
+        <a class="toolbar-btn" href="/hd/export?format=pdf&days={{.Days}}">Export PDF</a>
       </div>
       {{end}}
     </div>
