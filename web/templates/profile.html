@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
 {{template "theme-css" .}}
 {{template "app-shell-css" .}}
+{{template "password-toggle-css" .}}
 <style>
 .profile-wrap { max-width: 34rem; margin: 0 auto; }
 .profile-section { margin-bottom: 1.75rem; padding: 1.4rem 1.5rem; }
@@ -95,12 +96,21 @@ dialog .dialog-actions { display: flex; gap: 0.75rem; justify-content: flex-end;
       <h2>เปลี่ยนรหัสผ่าน</h2>
       <form method="POST" action="/profile/password" id="password-form"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
         <label class="field-label" for="current_password">รหัสผ่านปัจจุบัน</label>
-        <input type="password" id="current_password" name="current_password" required>
+        <div class="password-field-wrap">
+          <input type="password" id="current_password" name="current_password" required>
+          {{template "password-toggle-button" .}}
+        </div>
         <label class="field-label" for="new_password">รหัสผ่านใหม่</label>
-        <input type="password" id="new_password" name="new_password" required minlength="10">
+        <div class="password-field-wrap">
+          <input type="password" id="new_password" name="new_password" required minlength="10">
+          {{template "password-toggle-button" .}}
+        </div>
         <p class="field-hint">อย่างน้อย 10 ตัวอักษร มีทั้งตัวอักษรและตัวเลข</p>
         <label class="field-label" for="confirm_password">ยืนยันรหัสผ่านใหม่</label>
-        <input type="password" id="confirm_password" name="confirm_password" required minlength="10">
+        <div class="password-field-wrap">
+          <input type="password" id="confirm_password" name="confirm_password" required minlength="10">
+          {{template "password-toggle-button" .}}
+        </div>
         <button type="submit" class="btn btn-primary">เปลี่ยนรหัสผ่าน</button>
       </form>
     </div>
@@ -193,7 +203,10 @@ dialog .dialog-actions { display: flex; gap: 0.75rem; justify-content: flex-end;
   <p>บัญชีและข้อมูลของคุณจะถูกลบถาวรใน 90 วัน กรุณากรอกรหัสผ่านและพิมพ์คำว่า "{{.DeleteAccountConfirmPhrase}}" เพื่อยืนยัน</p>
   <form method="POST" action="/profile/delete-account"><input type="hidden" name="_csrf" value="{{ $.csrf }}">
     <label class="field-label" for="delete_password">รหัสผ่านปัจจุบัน</label>
-    <input type="password" id="delete_password" name="password" required>
+    <div class="password-field-wrap">
+      <input type="password" id="delete_password" name="password" required>
+      {{template "password-toggle-button" .}}
+    </div>
     <label class="field-label" for="delete_confirm_text">พิมพ์ "{{.DeleteAccountConfirmPhrase}}"</label>
     <input type="text" id="delete_confirm_text" name="confirm_text" required autocomplete="off">
     <div class="dialog-actions">
@@ -254,5 +267,6 @@ dialog .dialog-actions { display: flex; gap: 0.75rem; justify-content: flex-end;
 </script>
 
 {{template "cookie-consent" .}}
+{{template "password-toggle-js" .}}
 </body>
 </html>
