@@ -74,7 +74,7 @@ func main() {
 		log.Fatalf("startup aborted: %v", err)
 	}
 
-	e := newServer(cfg, db, m, true)
+	e := newServer(cfg, db, m, serverOptions{})
 
 	addr := os.Getenv("APP_ADDR")
 	if addr == "" {
@@ -84,26 +84,81 @@ func main() {
 	e.Logger.Fatal(e.Start(addr))
 }
 
+// serverOptions turns off pieces of newServer that are wrong to run
+// as-is inside a test binary. Both default to true (production
+// behavior) via their zero value's negation - see newServer's doc
+// comment - so main() passes serverOptions{} unchanged and only tests
+// need to opt out of anything.
+// mountGroup registers routes with one middleware attached to each,
+// through the exact same *echo.Echo.GET/POST calls main() uses for public
+// routes — never through echo.Echo.Group(""), which has a router bug for
+// empty-prefix groups (see the authed group's comment at its call site).
+// Exists purely so 58 call sites can read authed.GET(path, handler)
+// instead of repeating the middleware argument at every one.
+type mountGroup struct {
+	e          *echo.Echo
+	middleware echo.MiddlewareFunc
+}
+
+func (g mountGroup) GET(path string, h echo.HandlerFunc) *echo.Route {
+	return g.e.GET(path, h, g.middleware)
+}
+
+func (g mountGroup) POST(path string, h echo.HandlerFunc) *echo.Route {
+	return g.e.POST(path, h, g.middleware)
+}
+
+type serverOptions struct {
+	// DisableRateLimit is true only in tests. The per-IP limiters on
+	// register/login/etc. are process-lifetime and keyed by client IP,
+	// and every request from a test binary comes from the same loopback
+	// address — leaving them on would fail later subtests by exhausting
+	// the bucket, for reasons that have nothing to do with what those
+	// subtests check. The per-account login lockout (auth.LoginLimiter,
+	// keyed by email) is unaffected and still runs in tests.
+	DisableRateLimit bool
+	// DisableErrorAlerts is true only in tests that deliberately trigger
+	// a 5xx (see errors_test.go's panic route): without it, the very
+	// first one would email cfg.AdminAlertEmail for real through
+	// whatever SMTP credentials the test machine's .env has, which for
+	// local dev is the production Resend account — see
+	// docs/incidents/2026-07-12-backup-bucket-exposure.md for why a
+	// class of "test on prod-adjacent credentials by accident" mistake
+	// gets taken seriously here.
+	DisableErrorAlerts bool
+}
+
 // newServer wires the whole application: security/CSRF middleware,
 // templates, and every route. main() calls it once at startup; tests call
 // it directly against a real (local, throwaway) database, so they exercise
 // the exact route table and guards that run in production instead of a
 // hand-picked subset that could quietly drift from it.
-//
-// rateLimit is false only in tests. The per-IP limiters on
-// register/login/etc. are process-lifetime and keyed by client IP, and
-// every request from a test binary comes from the same loopback address —
-// leaving them on would fail later subtests by exhausting the bucket, for
-// reasons that have nothing to do with what those subtests check. The
-// per-account login lockout (auth.LoginLimiter, keyed by email) is
-// unaffected and still runs in tests.
-func newServer(cfg *config.Config, db *gorm.DB, m *mailer.Mailer, rateLimit bool) *echo.Echo {
+func newServer(cfg *config.Config, db *gorm.DB, m *mailer.Mailer, opts serverOptions) *echo.Echo {
 	authHandler := handler.NewAuthHandler(db, cfg, m)
+	// A nil mailer here is exactly what ErrorReporter already treats as
+	// "log it, don't try to send" — see serverOptions.DisableErrorAlerts.
+	alertMailer := m
+	if opts.DisableErrorAlerts {
+		alertMailer = nil
+	}
+	errorReporter := handler.NewErrorReporter(alertMailer, cfg.AdminAlertEmail)
 
 	e := echo.New()
 	e.HideBanner = true
+	// Replaces Echo's default: a bare error page and no way to find out
+	// about a real breakage except a patient calling. See
+	// internal/handler/errors.go's doc comment.
+	e.HTTPErrorHandler = errorReporter.HTTPErrorHandler
 	e.Use(echomw.Logger())
-	e.Use(echomw.Recover())
+	e.Use(echomw.RecoverWithConfig(echomw.RecoverConfig{
+		// The stack still gets to the admin alert email (via
+		// RecoverLogErrorFunc stashing it on the context for
+		// HTTPErrorHandler to read) - this only turns off Recover's own
+		// separate Printf of it, so a panic's stack appears once, not
+		// twice.
+		DisablePrintStack: true,
+		LogErrorFunc:      handler.RecoverLogErrorFunc,
+	}))
 
 	// Security headers have to be set here rather than in nginx: the nginx
 	// config on the server is managed separately and is off-limits to this
@@ -242,10 +297,10 @@ func newServer(cfg *config.Config, db *gorm.DB, m *mailer.Mailer, rateLimit bool
 	})
 
 	// withLimiter returns the limiter as the route's only middleware, or
-	// none at all when rateLimit is off (tests) — see newServer's doc
-	// comment for why.
+	// none at all when rate limiting is disabled (tests) — see
+	// serverOptions.DisableRateLimit.
 	withLimiter := func(mw echo.MiddlewareFunc) []echo.MiddlewareFunc {
-		if !rateLimit {
+		if opts.DisableRateLimit {
 			return nil
 		}
 		return []echo.MiddlewareFunc{mw}
@@ -351,7 +406,21 @@ func newServer(cfg *config.Config, db *gorm.DB, m *mailer.Mailer, rateLimit bool
 	// Onboarding and consent live here too: they need a logged-in user but
 	// deliberately not a completed profile, which is what they exist to
 	// collect.
-	authed := e.Group("", authHandler.RequireSession)
+	//
+	// mountGroup, not e.Group(""): Echo's router mishandles an
+	// empty-prefix Group specifically — an unmatched path anywhere in the
+	// app (a typo, a bot probing a URL that was never real) falls through
+	// to one of the group's own route handlers instead of a real 404,
+	// because the group's routes and the "no route matched" case share a
+	// root node in Echo's radix tree once the prefix is "". Confirmed
+	// with a two-line reproduction against the exact echo v4.15.4 this
+	// app pins, and confirmed already live on production before this fix
+	// (curl any nonsense path — it 303s to /login, not 404). Applying the
+	// middleware per-route instead of via Group sidesteps the router
+	// behavior entirely; mountGroup exists only so every call site below
+	// keeps reading `authed.GET(path, handler)` rather than repeating the
+	// middleware argument 58 times.
+	authed := mountGroup{e: e, middleware: authHandler.RequireSession}
 
 	authed.GET("/onboarding", authHandler.OnboardingForm)
 	authed.POST("/onboarding", authHandler.OnboardingSubmit)
@@ -412,8 +481,8 @@ func newServer(cfg *config.Config, db *gorm.DB, m *mailer.Mailer, rateLimit bool
 	//
 	// These act on other people's accounts and on what patients get shown,
 	// so the role check belongs on the group rather than on each handler's
-	// memory.
-	adminOnly := e.Group("", authHandler.RequireAdminRole)
+	// memory. mountGroup, not e.Group("") — see authed's comment above.
+	adminOnly := mountGroup{e: e, middleware: authHandler.RequireAdminRole}
 
 	adminOnly.GET("/admin/content-queue", authHandler.AdminContentQueue)
 	adminOnly.POST("/admin/content-queue/:id/approve", authHandler.AdminApproveContent)

@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/labstack/echo/v4"
+
 	"github.com/atiroop/pdlife/internal/auth"
 	"github.com/atiroop/pdlife/internal/config"
 	"github.com/atiroop/pdlife/internal/mailer"
@@ -39,6 +41,11 @@ import (
 type testApp struct {
 	srv *httptest.Server
 	db  *gorm.DB
+	// e is exposed so tests can register a test-only route directly
+	// (e.g. errors_test.go's deliberately panicking handler) against the
+	// exact same renderer/middleware chain newServer built, without that
+	// route ever existing in main.go's real route table.
+	e *echo.Echo
 }
 
 // newTestApp boots the real route table (newServer) against the local dev
@@ -73,14 +80,18 @@ func newTestApp(t *testing.T) *testApp {
 		t.Fatalf("mailer.New: %v", err)
 	}
 
-	// rateLimit=false: see newServer's doc comment. Every other piece of
-	// the app — CSRF, security headers, session handling, route
-	// grouping — is exactly what runs in production.
-	e := newServer(cfg, db, m, false)
+	// DisableRateLimit: see serverOptions' doc comment. DisableErrorAlerts:
+	// any test in this file that trips a real 5xx — deliberately
+	// (errors_test.go's panic route) or by accident — must never place a
+	// real SMTP call to cfg.AdminAlertEmail through whatever credentials
+	// the test machine's .env has. Every other piece of the app — CSRF,
+	// security headers, session handling, route grouping — is exactly
+	// what runs in production.
+	e := newServer(cfg, db, m, serverOptions{DisableRateLimit: true, DisableErrorAlerts: true})
 	srv := httptest.NewTLSServer(e)
 	t.Cleanup(srv.Close)
 
-	return &testApp{srv: srv, db: db}
+	return &testApp{srv: srv, db: db, e: e}
 }
 
 // newClient returns a client with its own cookie jar (so each test's

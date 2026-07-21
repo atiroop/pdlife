@@ -27,6 +27,12 @@ type Config struct {
 	AppBaseURL  string
 	LogoURL     string
 	LogoURLDark string
+
+	// AdminAlertEmail is where cmd/db_backup and cmd/uptime_check already
+	// send failure alerts, and where the web server's own 5xx/panic
+	// alerts (see internal/handler/errors.go) go too — one address for
+	// every "something is broken, look now" email this app sends.
+	AdminAlertEmail string
 }
 
 // MinJWTSecretLen is the shortest JWT_SECRET we accept. HS256 keys shorter
@@ -70,6 +76,8 @@ func Load() (*Config, error) {
 		AppBaseURL:  getEnv("APP_BASE_URL", "https://pdlife.app"),
 		LogoURL:     getEnv("LOGO_URL", ""),
 		LogoURLDark: getEnv("LOGO_URL_DARK", ""),
+
+		AdminAlertEmail: getEnv("ADMIN_ALERT_EMAIL", "admin@pdlife.app"),
 	}
 
 	if err := cfg.validate(); err != nil {

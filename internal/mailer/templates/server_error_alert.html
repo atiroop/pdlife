@@ -1,0 +1,53 @@
+{{define "server_error_alert.html"}}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Server error - pdlife.app</title>
+</head>
+<body style="margin:0;padding:0;background:#F6F3FF;font-family:'Sarabun',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F3FF;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border:3px solid #151516;border-radius:10px;box-shadow:4px 4px 0 #151516;">
+          <tr>
+            <td style="padding:28px 28px 8px;">
+              <span style="font-weight:800;font-size:18px;color:#151516;border-bottom:3px solid #FF3D6E;padding-bottom:3px;">pdlife.app — Server error</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 28px 0;">
+              <h1 style="font-size:20px;color:#151516;margin:0 0 12px;">🔴 {{.Status}} บน {{.Method}} {{.Path}}</h1>
+              <p style="font-size:15px;color:#151516;line-height:1.6;margin:0 0 16px;">
+                มีคำขอจากผู้ใช้จริงล้มเหลวด้วย error ที่ไม่คาดคิด กรุณาตรวจสอบ
+                {{if .SuppressedCount}}<strong>อีเมลนี้ถูกหน่วงไว้ — เกิดขึ้นซ้ำแล้ว {{.SuppressedCount}} ครั้งก่อนอีเมลนี้จะถูกส่ง</strong>{{end}}
+              </p>
+              <table role="presentation" width="100%" cellpadding="8" cellspacing="0" style="border:2px solid #151516;border-radius:8px;font-size:14px;margin-bottom:16px;">
+                <tr style="background:#F6F3FF;">
+                  <td style="font-weight:700;">Error</td>
+                  <td style="font-family:monospace;font-size:12px;">{{.Error}}</td>
+                </tr>
+                {{if .UserID}}<tr>
+                  <td style="font-weight:700;">User ID</td>
+                  <td>{{.UserID}}</td>
+                </tr>{{end}}
+                <tr style="background:#F6F3FF;">
+                  <td style="font-weight:700;">เวลา</td>
+                  <td>{{.OccurredAt}}</td>
+                </tr>
+              </table>
+              {{if .Stack}}<p style="font-size:13px;color:#46584F;margin:0 0 6px;font-weight:700;">Stack trace (panic ที่ถูกดักไว้)</p>
+              <pre style="background:#151516;color:#F6F3FF;padding:12px;border-radius:8px;font-size:11px;line-height:1.5;overflow-x:auto;white-space:pre-wrap;">{{.Stack}}</pre>{{end}}
+              <p style="font-size:13px;color:#46584F;margin:20px 0 0;">
+                ดู log เต็มได้ที่ journalctl -u pdlife บน VPS — อีเมลถัดไปจะไม่ส่งซ้ำภายใน 15 นาทีแม้เกิด error ซ้ำ
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+{{end}}

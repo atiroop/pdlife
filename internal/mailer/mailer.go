@@ -115,6 +115,33 @@ func (m *Mailer) SendFoodCheckDiffAlert(to string, data FoodCheckDiffAlertData) 
 	return m.send(to, "Food Check: พบความเปลี่ยนแปลงที่แหล่งข้อมูล "+data.SourceName+" - pdlife.app", htmlBuf.String(), textBuf.String())
 }
 
+// ServerErrorAlertData is used by internal/handler's error reporter for a
+// genuine 5xx or recovered panic from a live request — see that file's
+// doc comment for why this is deliberately rate-limited to one email
+// per cooldown window rather than one per error.
+type ServerErrorAlertData struct {
+	Status          int
+	Method          string
+	Path            string
+	Error           string
+	Stack           string // empty unless this came from a recovered panic
+	UserID          string // empty if the request had no session
+	OccurredAt      string
+	SuppressedCount int // other 5xx/panics swallowed by the cooldown since the last alert
+}
+
+func (m *Mailer) SendServerErrorAlert(to string, data ServerErrorAlertData) error {
+	var htmlBuf, textBuf bytes.Buffer
+	if err := m.htmlTmpl.ExecuteTemplate(&htmlBuf, "server_error_alert.html", data); err != nil {
+		return fmt.Errorf("render server error alert html: %w", err)
+	}
+	if err := m.textTmpl.ExecuteTemplate(&textBuf, "server_error_alert.txt", data); err != nil {
+		return fmt.Errorf("render server error alert text: %w", err)
+	}
+	subject := fmt.Sprintf("🔴 pdlife.app: %d บน %s %s", data.Status, data.Method, data.Path)
+	return m.send(to, subject, htmlBuf.String(), textBuf.String())
+}
+
 // BackupFailureAlertData is used by cmd/db_backup on any failed step
 // (mysqldump, gzip, R2 upload, or retention pruning) — see that tool's doc
 // comment. A silently-failing backup is more dangerous than no backup at

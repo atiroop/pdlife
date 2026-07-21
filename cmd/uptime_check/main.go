@@ -50,7 +50,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("uptime_check: %v", err)
 	}
-	adminEmail := getEnvOr("ADMIN_ALERT_EMAIL", "admin@pdlife.app")
+	adminEmail := cfg.AdminAlertEmail
 
 	m, err := mailer.New(cfg)
 	if err != nil {
@@ -140,11 +140,4 @@ func saveState(path string, s state) {
 	if err := os.WriteFile(path, data, 0600); err != nil {
 		log.Printf("uptime_check: WARNING: writing state file failed: %v", err)
 	}
-}
-
-func getEnvOr(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
 }

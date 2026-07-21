@@ -71,7 +71,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("db_backup: %v", err)
 	}
-	adminEmail := getEnvOr("ADMIN_ALERT_EMAIL", "admin@pdlife.app")
+	adminEmail := cfg.AdminAlertEmail
 
 	m, err := mailer.New(cfg)
 	if err != nil {
@@ -276,11 +276,4 @@ func stepOf(err error) string {
 		return se.step
 	}
 	return "unknown"
-}
-
-func getEnvOr(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
 }

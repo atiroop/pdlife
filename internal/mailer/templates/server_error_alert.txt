@@ -1,0 +1,17 @@
+{{define "server_error_alert.txt"}}pdlife.app — Server error: {{.Status}} บน {{.Method}} {{.Path}}
+
+มีคำขอจากผู้ใช้จริงล้มเหลวด้วย error ที่ไม่คาดคิด กรุณาตรวจสอบ
+{{if .SuppressedCount}}อีเมลนี้ถูกหน่วงไว้ — เกิดขึ้นซ้ำแล้ว {{.SuppressedCount}} ครั้งก่อนอีเมลนี้จะถูกส่ง
+{{end}}
+Error: {{.Error}}
+{{if .UserID}}User ID: {{.UserID}}
+{{end}}เวลา: {{.OccurredAt}}
+{{if .Stack}}
+Stack trace (panic ที่ถูกดักไว้):
+{{.Stack}}
+{{end}}
+ดู log เต็มได้ที่ journalctl -u pdlife บน VPS
+อีเมลถัดไปจะไม่ส่งซ้ำภายใน 15 นาทีแม้เกิด error ซ้ำ
+
+pdlife.app
+{{end}}
