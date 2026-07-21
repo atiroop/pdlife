@@ -15,6 +15,7 @@ import (
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
 	"golang.org/x/time/rate"
+	"gorm.io/gorm"
 
 	"github.com/atiroop/pdlife/internal/config"
 	"github.com/atiroop/pdlife/internal/handler"
@@ -72,6 +73,31 @@ func main() {
 	if err != nil {
 		log.Fatalf("startup aborted: %v", err)
 	}
+
+	e := newServer(cfg, db, m, true)
+
+	addr := os.Getenv("APP_ADDR")
+	if addr == "" {
+		// nginx on the production server proxies pdlife.app to this port
+		addr = "127.0.0.1:8085"
+	}
+	e.Logger.Fatal(e.Start(addr))
+}
+
+// newServer wires the whole application: security/CSRF middleware,
+// templates, and every route. main() calls it once at startup; tests call
+// it directly against a real (local, throwaway) database, so they exercise
+// the exact route table and guards that run in production instead of a
+// hand-picked subset that could quietly drift from it.
+//
+// rateLimit is false only in tests. The per-IP limiters on
+// register/login/etc. are process-lifetime and keyed by client IP, and
+// every request from a test binary comes from the same loopback address —
+// leaving them on would fail later subtests by exhausting the bucket, for
+// reasons that have nothing to do with what those subtests check. The
+// per-account login lockout (auth.LoginLimiter, keyed by email) is
+// unaffected and still runs in tests.
+func newServer(cfg *config.Config, db *gorm.DB, m *mailer.Mailer, rateLimit bool) *echo.Echo {
 	authHandler := handler.NewAuthHandler(db, cfg, m)
 
 	e := echo.New()
@@ -215,6 +241,16 @@ func main() {
 		})
 	})
 
+	// withLimiter returns the limiter as the route's only middleware, or
+	// none at all when rateLimit is off (tests) — see newServer's doc
+	// comment for why.
+	withLimiter := func(mw echo.MiddlewareFunc) []echo.MiddlewareFunc {
+		if !rateLimit {
+			return nil
+		}
+		return []echo.MiddlewareFunc{mw}
+	}
+
 	registerLimiter := echomw.RateLimiterWithConfig(echomw.RateLimiterConfig{
 		Store: echomw.NewRateLimiterMemoryStoreWithConfig(echomw.RateLimiterMemoryStoreConfig{
 			Rate: rate.Limit(5.0 / 3600.0), Burst: 5, ExpiresIn: time.Hour,
@@ -288,19 +324,19 @@ func main() {
 	// route here is a decision to make it public.
 
 	e.GET("/register", authHandler.RegisterForm)
-	e.POST("/register", authHandler.Register, registerLimiter)
+	e.POST("/register", authHandler.Register, withLimiter(registerLimiter)...)
 	e.GET("/verify-email", authHandler.VerifyEmail)
 	e.GET("/resend-verification", authHandler.ResendVerificationForm)
-	e.POST("/resend-verification", authHandler.ResendVerification, resendLimiter)
+	e.POST("/resend-verification", authHandler.ResendVerification, withLimiter(resendLimiter)...)
 
 	e.GET("/login", authHandler.LoginForm)
-	e.POST("/login", authHandler.Login, loginLimiter)
+	e.POST("/login", authHandler.Login, withLimiter(loginLimiter)...)
 	// Logout stays public on purpose: it clears the cookies, and gating it
 	// on a valid session would leave someone whose session is already
 	// broken with no way to clear the bad ones.
 	e.POST("/logout", authHandler.Logout)
 	e.GET("/forgot-password", authHandler.ForgotPasswordForm)
-	e.POST("/forgot-password", authHandler.ForgotPassword, forgotPasswordLimiter)
+	e.POST("/forgot-password", authHandler.ForgotPassword, withLimiter(forgotPasswordLimiter)...)
 	e.GET("/reset-password", authHandler.ResetPasswordForm)
 	e.POST("/reset-password", authHandler.ResetPassword)
 
@@ -416,12 +452,7 @@ func main() {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	})
 
-	addr := os.Getenv("APP_ADDR")
-	if addr == "" {
-		// nginx on the production server proxies pdlife.app to this port
-		addr = "127.0.0.1:8085"
-	}
-	e.Logger.Fatal(e.Start(addr))
+	return e
 }
 
 type dashboardCard struct {
